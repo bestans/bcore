@@ -64,15 +64,19 @@ private:
 	CreateFunc create_func_;
 };
 
+template <class T>
 class SectionBuffer {
 public:
 	SectionBuffer(uint32_t max_count, uint32_t buffer_size) :
 		max_count_(max_count),
 		buffer_size_(buffer_size),
-		data_list_(max_count, [=]() { return std::make_unique<ByteBuf>(buffer_size); }) {
+		data_list_(max_count, [=]() { return std::make_unique<T>(buffer_size); }) {
 
 	}
-	std::unique_ptr<ByteBuf> GetBuffer() {
+	SectionBuffer() : SectionBuffer(0, 0) {
+
+	}
+	std::unique_ptr<T> GetBuffer() {
 		std::lock_guard<std::mutex> lock(mutex_);
 		return data_list_.Pop();
 	}
@@ -84,31 +88,51 @@ private:
 	std::mutex mutex_;
 	uint32_t buffer_size_;
 	uint32_t max_count_;
-	SimpleStack<ByteBuf> data_list_;
+	SimpleStack<T> data_list_;
 };
+template <class T>
 class BufferPool {
 	BufferPool(uint32_t max_index, uint32_t min_index) {
 		if (min_index < 1)
 			throw new std::exception("invalid min_index:must >= 1");
-		if (max_index >= 32)
-			throw new std::exception("invalid max_index:must < 32");
-	}
-	int CalcIndex(uint32_t buffer_size) {
-		buffer_size = buffer_size >> min_index_;
-		int index = -1;
-		auto last_value = buffer_size;
-		while (buffer_size != 0) {
-			buffer_size >>= 2;
-			last_value = buffer_size;
-			index++;
+		if (max_index >= 32 || max_index <= min_index)
+			throw new std::exception("invalid max_index:must < 32 && > min_index");
+
+		max_buffer_size_ = 1 << max_index;
+		min_buffer_size_ = 1 << min_index + 1;
+		for (uint32_t i = min_index+1; i <= max_index; i++) {
+			auto buffer_size = 1 << i;
+			buffer_pool_.push_back(std::move(SectionBuffer(max_buffer_size_ / buffer_size, buffer_size)))
 		}
-		if (last_value == 1) {
-			index--;
-		}
-		return index;
 	}
+	std::unique_ptr<T> GetBuffer(uint32_t min_size) {
+		if (min_size < min_buffer_size_) {
+			return std::make_unique<T>(min_size);
+		}
+		bool has_left = false;
+		auto index = Log2Int(min_size, has_left);
+		if (has_left) index++;
+		if (index > min_index_ && index <= max_index_) {
+			return std::move(buffer_pool_[index - 1].GetBuffer());
+		}
+		return std::move(std::make_unique<T>(min_size));
+	}
+	void RecycleBuffer(std::unique_ptr<T> buffer) {
+		if (buffer->GetSize() < min_buffer_size_) {
+			return;
+		}
+		bool has_left = false;
+		auto index = Log2Int(min_size, has_left);
+		if (has_left) index++;
+		if (index > min_index_ && index <= max_index_) {
+			return buffer_pool_[index-1].RecycleBuffer(std::move(buffer));
+		}
+	}
+
 private:
+	std::vector<SectionBuffer<T>> buffer_pool_;
 	uint32_t max_index_;
 	uint32_t min_index_;
 	uint32_t max_buffer_size_;
+	uint32_t min_buffer_size_;
 };
