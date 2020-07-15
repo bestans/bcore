@@ -19,6 +19,13 @@ inline uint32_t Log2Int(uint32_t x, bool& has_left) {
 	return n;
 }
 
+template <class T>
+struct MoveWraper {
+	T value;
+
+	MoveWraper(const MoveWraper& v) : value(std::move(v)) {}
+};
+
 //128M 64M 32M 16M 8M 4M 2M 1M 512K 256K 128K 64K
 //
 
@@ -44,23 +51,24 @@ public:
 	std::unique_ptr<T> Pop() {
 		if (len_ > 0) {
 			len_--;
-			return std::move(data_list_[len_]);
+			return std::move(data_list_[len_].value);
 		}
-		return std::move(create_func_());
+		return std::move(create_func_()).unique();
 	}
 	void Push(std::unique_ptr<T> data) {
 		if (len_ < data_list_.size()) {
-			data_list_[len_++] = std::move(data);
+			//data_list_[len_++] = std::move(data);
 		}
 		else if (data_list_.size() < capacity_) {
 			data_list_.resize(std::min(data_list_.size() * 2, capacity_));
-			data_list_[len_++] = std::move(data);
+			//data_list_[len_++] = std::move(data);
+			std::swap()
 		}
 	}
 private:
 	uint32_t capacity_;
 	uint32_t len_;
-	std::vector<std::unique_ptr<T>> data_list_;
+	std::vector<MoveWraper<std::unique_ptr<T>>> data_list_;
 	CreateFunc create_func_;
 };
 
@@ -70,7 +78,7 @@ public:
 	SectionBuffer(uint32_t max_count, uint32_t buffer_size) :
 		max_count_(max_count),
 		buffer_size_(buffer_size),
-		mutex_(new std::mutex()),
+		//mutex_(new std::mutex()),
 		data_list_(max_count, [=]() { return std::make_unique<T>(buffer_size); }) {
 
 	}
@@ -78,15 +86,15 @@ public:
 
 	}
 	std::unique_ptr<T> GetBuffer() {
-		std::lock_guard<std::mutex> lock(*mutex_);
-		return data_list_.Pop();
+		//std::lock_guard<std::mutex> lock(*mutex_);
+		return std::move(data_list_.Pop());
 	}
 	void RecycleBuffer(std::unique_ptr<ByteBuf> buffer) {
-		std::lock_guard<std::mutex> lock(*mutex_);
+		//std::lock_guard<std::mutex> lock(*mutex_);
 		data_list_.Push(std::move(buffer));
 	}
 private:
-	std::mutex* mutex_;
+	//std::mutex* mutex_;
 	uint32_t buffer_size_;
 	uint32_t max_count_;
 	SimpleStack<T> data_list_;
@@ -101,7 +109,7 @@ public:
 			throw new std::exception("invalid max_index:must < 32 && > min_index");
 
 		max_buffer_size_ = 1 << max_index;
-		min_buffer_size_ = 1 << min_index + 1;
+		min_buffer_size_ = (1 << min_index) + 1;
 		auto cur_index = 0;
 		for (uint32_t i = min_index+1; i <= max_index; i++) {
 			auto buffer_size = 1 << i;

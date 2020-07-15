@@ -30,7 +30,6 @@ TEST(testCase, bufferpool) {
 	BufferPool<TestBuffer> pool(10, 2);
 	auto data = pool.GetBuffer(10);
 	cout << "111:" << data->GetSize() << endl;
-
 }
 
 int main(int argc, char** argv) {
