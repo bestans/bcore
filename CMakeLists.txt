@@ -7,3 +7,4 @@ project ("bcore")
 
 # 包含子项目。
 add_subdirectory ("test_project")
+add_subdirectory ("network")

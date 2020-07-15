@@ -70,6 +70,7 @@ public:
 	SectionBuffer(uint32_t max_count, uint32_t buffer_size) :
 		max_count_(max_count),
 		buffer_size_(buffer_size),
+		mutex_(new std::mutex()),
 		data_list_(max_count, [=]() { return std::make_unique<T>(buffer_size); }) {
 
 	}
@@ -77,22 +78,23 @@ public:
 
 	}
 	std::unique_ptr<T> GetBuffer() {
-		std::lock_guard<std::mutex> lock(mutex_);
+		std::lock_guard<std::mutex> lock(*mutex_);
 		return data_list_.Pop();
 	}
 	void RecycleBuffer(std::unique_ptr<ByteBuf> buffer) {
-		std::lock_guard<std::mutex> lock(mutex_);
+		std::lock_guard<std::mutex> lock(*mutex_);
 		data_list_.Push(std::move(buffer));
 	}
 private:
-	std::mutex mutex_;
+	std::mutex* mutex_;
 	uint32_t buffer_size_;
 	uint32_t max_count_;
 	SimpleStack<T> data_list_;
 };
 template <class T>
 class BufferPool {
-	BufferPool(uint32_t max_index, uint32_t min_index) {
+public:
+	BufferPool(uint32_t max_index, uint32_t min_index) : max_index_(max_index), min_index_(min_index) {
 		if (min_index < 1)
 			throw new std::exception("invalid min_index:must >= 1");
 		if (max_index >= 32 || max_index <= min_index)
@@ -100,9 +102,10 @@ class BufferPool {
 
 		max_buffer_size_ = 1 << max_index;
 		min_buffer_size_ = 1 << min_index + 1;
+		auto cur_index = 0;
 		for (uint32_t i = min_index+1; i <= max_index; i++) {
 			auto buffer_size = 1 << i;
-			buffer_pool_.push_back(std::move(SectionBuffer(max_buffer_size_ / buffer_size, buffer_size)))
+			buffer_pool_.emplace_back(std::move(SectionBuffer<T>(max_buffer_size_ / buffer_size, buffer_size)));
 		}
 	}
 	std::unique_ptr<T> GetBuffer(uint32_t min_size) {
@@ -113,7 +116,7 @@ class BufferPool {
 		auto index = Log2Int(min_size, has_left);
 		if (has_left) index++;
 		if (index > min_index_ && index <= max_index_) {
-			return std::move(buffer_pool_[index - 1].GetBuffer());
+			return std::move(buffer_pool_[index - min_index_ - 1].GetBuffer());
 		}
 		return std::move(std::make_unique<T>(min_size));
 	}
@@ -125,7 +128,7 @@ class BufferPool {
 		auto index = Log2Int(min_size, has_left);
 		if (has_left) index++;
 		if (index > min_index_ && index <= max_index_) {
-			return buffer_pool_[index-1].RecycleBuffer(std::move(buffer));
+			return buffer_pool_[index-1 - min_index_].RecycleBuffer(std::move(buffer));
 		}
 	}
 
