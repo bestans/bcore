@@ -29,7 +29,8 @@ TEST(testCase, bufferpool) {
 	{
 		BufferPool<TestBuffer> pool(10, 2);
 		for (int i = 0; i < 1000; i++) {
-			pool.GetBuffer(i);
+			auto buffer = pool.GetBuffer(i);
+			pool.RecycleBuffer(std::move(buffer));
 		}
 	}
 	auto v = new char[0];

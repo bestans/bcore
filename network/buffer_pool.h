@@ -63,14 +63,14 @@ public:
 		return std::move(create_func_());
 	}
 	void Push(std::unique_ptr<T> data) {
-		if !data{
+		if (!data) {
 			return;
 		}
 		if (len_ < data_list_.size()) {
 			data_list_[len_++] = data.release();
 		}
 		else if (data_list_.size() < capacity_) {
-			data_list_.resize(std::min(data_list_.size() * 2, capacity_));
+			data_list_.resize(std::min(uint32_t(data_list_.size() * 2), capacity_));
 			data_list_[len_++] = data.release();
 		}
 	}
@@ -87,7 +87,7 @@ public:
 	SectionBuffer(uint32_t max_count, uint32_t buffer_size) :
 		max_count_(max_count),
 		buffer_size_(buffer_size),
-		//mutex_(new std::mutex()),
+		mutex_(new std::mutex()),
 		data_list_(max_count, [=]() { return std::make_unique<T>(buffer_size); }) {
 
 	}
@@ -95,15 +95,15 @@ public:
 
 	}
 	std::unique_ptr<T> GetBuffer() {
-		//std::lock_guard<std::mutex> lock(*mutex_);
+		std::lock_guard<std::mutex> lock(*mutex_);
 		return std::move(data_list_.Pop());
 	}
 	void RecycleBuffer(std::unique_ptr<T> buffer) {
-		//std::lock_guard<std::mutex> lock(*mutex_);
+		std::lock_guard<std::mutex> lock(*mutex_);
 		data_list_.Push(std::move(buffer));
 	}
 private:
-	//std::mutex* mutex_;
+	std::mutex* mutex_;
 	uint32_t buffer_size_;
 	uint32_t max_count_;
 	SimpleStack<T> data_list_;
@@ -142,7 +142,7 @@ public:
 			return;
 		}
 		bool has_left = false;
-		auto index = Log2Int(min_size, has_left);
+		auto index = Log2Int(buffer->GetSize(), has_left);
 		if (has_left) index++;
 		if (index > min_index_ && index <= max_index_) {
 			return buffer_pool_[index-1 - min_index_].RecycleBuffer(std::move(buffer));
