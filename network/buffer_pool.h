@@ -46,29 +46,38 @@ public:
 	{
 	}
 	~SimpleStack() {
+		for (auto& it : data_list_) {
+			if (it != nullptr) {
+				delete it;
+			}
+		}
 		data_list_.clear();
 	}
 	std::unique_ptr<T> Pop() {
 		if (len_ > 0) {
 			len_--;
-			return std::move(data_list_[len_].value);
+			auto ptr = data_list_[len_];
+			data_list_[len_] = nullptr;
+			return std::unique_ptr<T>(ptr);
 		}
-		return std::move(create_func_()).unique();
+		return std::move(create_func_());
 	}
 	void Push(std::unique_ptr<T> data) {
+		if !data{
+			return;
+		}
 		if (len_ < data_list_.size()) {
-			//data_list_[len_++] = std::move(data);
+			data_list_[len_++] = data.release();
 		}
 		else if (data_list_.size() < capacity_) {
 			data_list_.resize(std::min(data_list_.size() * 2, capacity_));
-			//data_list_[len_++] = std::move(data);
-			std::swap()
+			data_list_[len_++] = data.release();
 		}
 	}
 private:
 	uint32_t capacity_;
 	uint32_t len_;
-	std::vector<MoveWraper<std::unique_ptr<T>>> data_list_;
+	std::vector<T*> data_list_;
 	CreateFunc create_func_;
 };
 
@@ -89,7 +98,7 @@ public:
 		//std::lock_guard<std::mutex> lock(*mutex_);
 		return std::move(data_list_.Pop());
 	}
-	void RecycleBuffer(std::unique_ptr<ByteBuf> buffer) {
+	void RecycleBuffer(std::unique_ptr<T> buffer) {
 		//std::lock_guard<std::mutex> lock(*mutex_);
 		data_list_.Push(std::move(buffer));
 	}
