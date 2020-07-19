@@ -93,6 +93,10 @@ public:
 	SectionBuffer() : SectionBuffer(0, 0) {
 
 	}
+	~SectionBuffer() {
+		delete mutex_;
+		mutex_ = nullptr;
+	}
 	std::unique_ptr<T> GetBuffer() {
 		std::lock_guard<std::mutex> lock(*mutex_);
 		return std::move(data_list_.Pop());
