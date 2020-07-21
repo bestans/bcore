@@ -26,8 +26,23 @@ namespace bcore {
 			data_list_.pop_back();
 			return true;
 		}
+		T Pop() {
+			if (data_list_.empty()) {
+				return T();
+			}
+			auto value = std::move(data_list_[0]);
+			std::pop_heap(data_list_.begin(), data_list_.end(), compare_func_);
+			data_list_.pop_back();
+			return std::move(value);
+		}
 		T& Top() {
 			return data_list_[0];
+		}
+		bool Empty() const {
+			return data_list_.empty();
+		}
+		size_t Size() const {
+			return data_list_.size();
 		}
 	private:
 		std::vector<T> data_list_;
