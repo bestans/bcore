@@ -16,11 +16,31 @@ namespace bcore {
 	struct TimerNode {
 		int64_t end_time = 0;
 		bool stop = false;
-		std::shared_ptr<ITimer> timer;
+		std::function<void()> func;
 	};
 	typedef std::shared_ptr<TimerNode> TimerNodeType;
 	class TimerManager : Singleton<TimerManager> {
 	public:
+		template <typename F, typename... Args>
+		void AddFuncAfterDuration(int64_t end_time, F&& f, Args&&... args) {
+			TimerNode node;
+			node.end_time = end_time;
+			node.func = std::move(std::bind(std::forward<F>(f), std::forward<Args>(args)...))
+		}
+		template <typename F, typename... Args>
+		void AddRepeatedTimer(int64_t end_time, int repeat_num, F&& f, Args&&... args) {
+			AddRepeatedTimerLocal(end_time, repeat_num, std::move(std::bind(std::forward<F>(f), std::forward<Args>(args)...)));
+		}
+		void AddRepeatedTimerLocal(int64_t duration, int repeat_num, std::function<void()> f) {
+			TimerNode node;
+			node.end_time = duration;
+			node.func = [this, local_f = std::move(f), repeat_num, duration]{
+				local_f();
+				if (repeat_num > 1) {
+					AddRepeatedTimerLocal(duration, repeat_num - 1, std::move(local_f));
+				}
+			};
+		}
 		void AddTimer(int64_t delta, std::shared_ptr<ITimer> timer) {
 			
 		}
@@ -60,7 +80,7 @@ namespace bcore {
 				while (!wait_process_list_.empty()) {
 					auto timer_node = std::move(wait_process_list_.front());
 					if (!timer_node->stop) {
-						timer_node->timer->OnFinish();
+						timer_node->func();
 					}
 					wait_process_list_.pop_front();
 				}
