@@ -2,7 +2,12 @@
 #include "singleton.h"
 #include <chrono>
 #include <ctime>
+#include <sstream>
+#include <iomanip>
+
 namespace bcore {
+
+	//const char* DefaultTimeFormat = "%Y-%m-%d-%H-%M-%S";
 	class BTime : public Singleton<BTime> {
 	public:
 		static int64_t GetTime() {
@@ -20,9 +25,16 @@ namespace bcore {
 				std::chrono::seconds(time));
 			return std::chrono::system_clock::to_time_t(std::chrono::system_clock::time_point(duration));
 		}
+		static std::string GetTimeFormat(int64_t t, const char* format = "%Y-%m-%d-%H-%M-%S") {
+			std::stringstream ss;
+			struct tm tformat;
+			localtime_s(&tformat, &t);
+			ss << std::put_time(&tformat, format);
+			return ss.str();
+		}
 	private:
 		static std::chrono::system_clock::duration GetTimePoint() {
-			auto time_point = std::chrono::system_clock::now().time_since_epoch().count();
+			auto time_point = std::chrono::system_clock::now().time_since_epoch().count()
 				+ BTime::Instance().offset;
 			return std::chrono::system_clock::duration(time_point);
 		}
