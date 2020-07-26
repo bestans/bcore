@@ -93,6 +93,7 @@ namespace test {
 
 	struct PriorData {
 		int value = 0;
+		PriorData() {}
 		PriorData(int v) : value(v) {}
 	};
 	struct PriorCmp {
@@ -101,17 +102,31 @@ namespace test {
 		}
 	};
 	TEST(bcore_misc, other) {
-		std::priority_queue<PriorData, vector<PriorData>, PriorCmp> data;
-		for (int i = 0; i < 10; i++) {
-			data.push(std::rand() % 20);
-		}
-		while (!data.empty()) {
-			cout << data.top().value << " ";
-			data.pop();
-		}
+		//std::priority_queue<PriorData, vector<PriorData>, PriorCmp> data;
+		//for (int i = 0; i < 10; i++) {
+		//	data.push(std::rand() % 20);
+		//}
+		//while (!data.empty()) {
+		//	cout << data.top().value << " ";
+		//	data.pop();
+		//}
 		cout << endl;
 		{
-			ObjectPool<PriorData>::Instance().GetObject(1);
+			ObjectPool<PriorData> pool([](PriorData* data) { data->value++; });
+			for (int i = 0; i < 10; i++) {
+				{
+					pool.GetUniqueObject(); 
+				}
+				{
+					pool.GetSharedObject();
+				}
+			}
+			{
+				cout << "times:" << pool.GetUniqueObject()->value << endl;
+			}
+			{
+				cout << "times:" << pool.GetSharedObject()->value << endl;
+			}
 		}
 	}
 }
