@@ -121,10 +121,11 @@ namespace test {
 					pool.GetSharedObject();
 				}
 			}
+			//{
+			//	cout << "times:" << pool.GetUniqueObject()->value << endl;
+			//}
 			{
-				cout << "times:" << pool.GetUniqueObject()->value << endl;
-			}
-			{
+				cout << "xxxxx\n";
 				cout << "times:" << pool.GetSharedObject()->value << endl;
 			}
 		}
