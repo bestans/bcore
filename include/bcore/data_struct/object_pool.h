@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <algorithm>
+#include <limits>
 
 namespace bcore {
 	template <typename T, typename... Args>
@@ -38,9 +39,13 @@ namespace bcore {
 			mutex_.lock();
 			pool_list_.push_back(t);
 			count++;
+			if (max_count_ < count) {
+				max_count_ = count;
+			}
 			mutex_.unlock();
 			cout << "addobject:" << count << endl;
 		}
+		
 		T* AllocObject() {
 			if (count <= 0) {
 				return new T();
@@ -51,8 +56,26 @@ namespace bcore {
 				return new T();
 			}
 			auto object = pool_list_[--count];
+			if (min_count_ > count) {
+				min_count_ = count;
+			}
 			mutex_.unlock();
 			return object;
+		}
+		void UpdateObject() {
+			mutex_.lock();
+			auto left_count = (min_count_ == std::numeric_limits<int>::max() || max_count_ == 0) ? count / 2 : max_count_ - min_count_;
+			if (left_count > 0) {
+				if (left_count >= 64) {
+					left_count >>= 1;
+				}
+				while (count > left_count) {
+					delete pool_list_[--count];
+				}
+			}
+			min_count_ = std::numeric_limits<int>::max();
+			max_count_ = 0;
+			mutex_.unlock();
 		}
 	private:
 		std::vector<T*> pool_list_;
@@ -60,5 +83,7 @@ namespace bcore {
 		std::mutex mutex_;
 		std::function<void(T*, Args...)> reset_func_;
 		DeleterType deleter_;
+		int min_count_ = std::numeric_limits<int>::max();
+		int max_count_ = 0;
 	};
 }

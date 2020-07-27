@@ -34,7 +34,7 @@ namespace bcore {
 		typedef std::shared_ptr<TimerNode> TimerNodeType;
 
 		template <typename F, typename... Args>
-		static void AddFuncAfterDuration(int64_t duration, F&& f, Args&&... args) {
+		inline static void AddFuncAfterDuration(int64_t duration, F&& f, Args&&... args) {
 			Timer::Instance().addTimer(duration + BTime::GetMilliTime(), std::move(std::bind(std::forward<F>(f), std::forward<Args>(args)...)));
 		}
 		template <typename F, typename... Args>
@@ -63,9 +63,12 @@ namespace bcore {
 					while (!timer_list_.empty() && timer_list_.top()->stop) {
 						timer_list_.pop();
 					}
-					if (timer_list_.empty()) {
+					while ((timer_list_.empty()) && running_) {
 						condition_.wait(lock);
 						continue;
+					}
+					if (!running_) {
+						return;
 					}
 					auto left_time = timer_list_.top()->end_time - check_time;
 					if (left_time > 0) {
