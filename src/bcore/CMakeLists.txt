@@ -9,5 +9,5 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     F:/github_code/googletest-release-1.10.0/googletest/include
 )
-
-target_link_libraries(bcore F://github_code//googletest-release-1.10.0-cmake//lib//Debug//gtestd.lib)
+message(${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(bcore  ${G_TEST_LIB})

@@ -2,6 +2,7 @@
 #include <vector>
 #include <algorithm>
 #include <limits>
+#include "timer.h"
 
 namespace bcore {
 	template <typename T, typename... Args>

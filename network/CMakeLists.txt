@@ -10,4 +10,4 @@ include_directories(
     F:/github_code/googletest-release-1.10.0/googletest/include
 )
 
-target_link_libraries(bnet-test F://github_code//googletest-release-1.10.0-cmake//lib//Debug//gtestd.lib)
+target_link_libraries(bnet-test  ${G_TEST_LIB})

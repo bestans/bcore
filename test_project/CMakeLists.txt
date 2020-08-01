@@ -18,6 +18,6 @@ link_directories(
     F://github_code//googletest-release-1.10.0-cmake//lib//Release
 )
 find_library(gtest-lib gtest)
-target_link_libraries(test_project F://github_code//googletest-release-1.10.0-cmake//lib//Debug//gtestd.lib)
+target_link_libraries(test_project  ${G_TEST_LIB})
 # TODO: 如有需要，请添加测试并安装目标。
 

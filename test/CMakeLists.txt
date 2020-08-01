@@ -11,4 +11,4 @@ include_directories(
 )
 
 
-target_link_libraries(bcore_test F://github_code//googletest-release-1.10.0-cmake//lib//Debug//gtestd.lib)
+target_link_libraries(bcore_test ${G_TEST_LIB})
