@@ -13,6 +13,9 @@ ELSE()
     SET(CMAKE_BUILD_TYPE "")
 ENDIF()
 
+link_directories(
+    F://github_code//googletest-release-1.10.0-cmake//lib//Release
+)
 SET(G_TEST_LIB ${LIB_DIR}gtest)
 message(${G_TEST_LIB} ${CMAKE_BUILD_TYPE})
 
