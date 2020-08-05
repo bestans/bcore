@@ -4,7 +4,7 @@
 
 using namespace std;
 
-int main(int argc, char** argv) {
+int main222(int argc, char** argv) {
 	cout << "Hello CMake." << endl;
 	test_timer();
 	testing::InitGoogleTest(&argc, argv);

@@ -3,10 +3,10 @@
 #
 cmake_minimum_required (VERSION 3.8)
 
-file(GLOB SRC_LIST "*.cpp" "test_buffer/*.cpp")
+file(GLOB TEST_PRO_SRC_LIST "*.cpp" "test_buffer/*.cpp")
 
 # 将源代码添加到此项目的可执行文件。
-add_executable (test_project ${SRC_LIST})
+add_executable (test_project ${TEST_PRO_SRC_LIST})
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}

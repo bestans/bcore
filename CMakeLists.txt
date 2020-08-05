@@ -17,7 +17,7 @@ link_directories(
     ${LIB_DIR}
 )
 SET(G_TEST_LIB ${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR}/gtest.lib)
-
+SET(ROOT_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 message(G_TEST_LIB\ ${G_TEST_LIB})
 
 include_directories(
@@ -31,4 +31,5 @@ add_subdirectory ("test_project")
 add_subdirectory ("network")
 add_subdirectory ("src/bcore")
 add_subdirectory ("test")
+add_subdirectory ("src/basio")
 
