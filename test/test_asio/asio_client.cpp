@@ -17,13 +17,16 @@ int main(int argc, char* argv[])
 {
 	try
 	{
+		auto ptr = std::make_shared<asio::io_context>();
+		std::cout << "xxx\n";
 		if (argc != 4)
 		{
 			std::cerr << "Usage: blocking_tcp_echo_client <host> <port>\n";
 			return 1;
 		}
 
-		asio::io_context io_context;
+
+		asio::io_context& io_context = *ptr;
 
 		tcp::socket s(io_context);
 		tcp::resolver resolver(io_context);

@@ -7,10 +7,10 @@ namespace bcore_basio {
 	class TcpSession : public std::enable_shared_from_this<TcpSession>
 	{
 	public:
-		TcpSession(asio::io_context& io_context, ThreadPool& pool)
-			: socket_(io_context),
-			strand_(io_context),
-			pool_(pool)
+		TcpSession(std::shared_ptr<ThreadPoolContext> threadCtx) :
+			thread_context_(threadCtx),
+			socket_(*(thread_context_->ctx)),
+			strand_(*(thread_context_->ctx))
 		{ }
 
 		tcp::socket& Socket() { return socket_; }
@@ -19,9 +19,9 @@ namespace bcore_basio {
 		void DoRead();
 		void DoWrite(std::size_t length);
 	private:
+		std::shared_ptr<ThreadPoolContext> thread_context_;
 		tcp::socket socket_;
 		asio::io_context::strand strand_;
 		std::array<char, 8192> buffer_;
-		ThreadPool& pool_;
 	};
 }

@@ -141,31 +141,31 @@ namespace test {
 		ss << std::endl;
 		return ss.str();
 	}
-	TEST(bcore_misc, stat_balance) {
-		StatBalance info(5);
-		std::array<int, 5> arr({ 0 });
-		std::array<int, 5> weight({ 0 });
-		for (int i = 0; i < 10000; i++) {
-			auto w = rand() % 20;
-			auto index = info.AllocIndex(w);
-			arr[index]++;
-			weight[index] += w;
-		}
-		std::cout << ToString(arr) << "," << ToString(weight) << std::endl;
-		for (int i = 0; i < 5; i++) {
-			auto w = rand() % weight[i];
-			weight[i] -= w;
-			info.FreeIndex(i, w);
-		}
-		std::cout << ToString(arr) << "," << ToString(weight) << std::endl;
-		for (int i = 0; i < 3000; i++) {
-			auto w = rand() % 20;
-			auto index = info.AllocIndex(w);
-			arr[index]++;
+	//TEST(bcore_misc, stat_balance) {
+	//	StatBalance info(5);
+	//	std::array<int, 5> arr({ 0 });
+	//	std::array<int, 5> weight({ 0 });
+	//	for (int i = 0; i < 10000; i++) {
+	//		auto w = rand() % 20;
+	//		auto index = info.AllocIndex(w);
+	//		arr[index]++;
+	//		weight[index] += w;
+	//	}
+	//	std::cout << ToString(arr) << "," << ToString(weight) << std::endl;
+	//	for (int i = 0; i < 5; i++) {
+	//		auto w = rand() % weight[i];
+	//		weight[i] -= w;
+	//		info.FreeIndex(i, w);
+	//	}
+	//	std::cout << ToString(arr) << "," << ToString(weight) << std::endl;
+	//	for (int i = 0; i < 3000; i++) {
+	//		auto w = rand() % 20;
+	//		auto index = info.AllocIndex(w);
+	//		arr[index]++;
 
-			weight[index] += w;
-		}
-		std::cout << std::endl;
-		std::cout << ToString(arr) << "," << ToString(weight) << std::endl;
-	}
+	//		weight[index] += w;
+	//	}
+	//	std::cout << std::endl;
+	//	std::cout << ToString(arr) << "," << ToString(weight) << std::endl;
+	//}
 }

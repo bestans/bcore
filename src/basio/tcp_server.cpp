@@ -8,7 +8,7 @@ using namespace std;
 namespace bcore_basio {
 	void TcpServer::DoAccept()
 	{
-		auto conn = std::make_shared<TcpSession>(io_context_);
+		auto conn = std::make_shared<TcpSession>(pool_->AllocContext(1));
 		acceptor_.async_accept(conn->Socket(),
 			[this, conn](asio::error_code ec)
 			{
@@ -20,25 +20,24 @@ namespace bcore_basio {
 
 using namespace bcore_basio;
 int main1(int argc, char* argv[]) {
-	std::cout << "test tcp server\n";
+	//std::cout << "test tcp server\n";
 
-	asio::io_context io_context;
-	vector<thread> pool;
-	pool.emplace_back([&] {
-		io_context.run();
-		});
-	auto guard = asio::make_work_guard(io_context);
-	TcpServer s(io_context, std::atoi(argv[1]));
-	for (auto& t : pool) {
-		t.join();
-	}
+	//asio::io_context io_context;
+	//vector<thread> pool;
+	//pool.emplace_back([&] {
+	//	io_context.run();
+	//	});
+	//auto guard = asio::make_work_guard(io_context);
+	//TcpServer s(io_context, std::atoi(argv[1]));
+	//for (auto& t : pool) {
+	//	t.join();
+	//}
 	return 0;
 }
-int main1(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
 	std::cout << "test tcp server\n";
-
-	bcore_basio::ThreadPool pool(2);
-	TcpServer s(std::move(pool.AllocContext(10)), std::atoi(argv[1]));
-	pool.Stop();
+	auto pool = std::make_shared<bcore_basio::ThreadPool>(3);
+	TcpServer s(pool->AllocContext(10), std::atoi(argv[1]));
+	pool->Wait();
 	return 0;
 }

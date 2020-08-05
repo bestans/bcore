@@ -7,9 +7,9 @@ namespace bcore_basio {
 	class TcpServer
 	{
 	public:
-		TcpServer(std::shared_ptr<ThreadPoolContext>&& threadCtx, unsigned short port) :
+		TcpServer(std::shared_ptr<ThreadPoolContext> threadCtx, unsigned short port) :
 			thread_context_(threadCtx),
-			acceptor_(threadCtx->ctx, tcp::endpoint(tcp::v4(), port)),
+			acceptor_(*(threadCtx->ctx), tcp::endpoint(tcp::v4(), port)),
 			pool_(threadCtx->pool)
 		{
 			DoAccept();
@@ -19,6 +19,6 @@ namespace bcore_basio {
 	private:
 		std::shared_ptr<ThreadPoolContext> thread_context_;
 		tcp::acceptor acceptor_;
-		ThreadPool& pool_;
+		std::shared_ptr<ThreadPool> pool_;
 	};
 }
