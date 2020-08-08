@@ -7,8 +7,8 @@
 namespace bcore {
 	template <typename T, typename... Args>
 	class ObjectPool {
-		typedef std::function<void(T*)> DeleterType;
 	public:
+		typedef std::function<void(T*)> DeleterType;
 		ObjectPool() : reset_func_([](T*, Args...) {}) {
 			deleter_ = [this](T* t) { Deleter(t); };
 		}
@@ -28,13 +28,21 @@ namespace bcore {
 			return std::shared_ptr<T>(object, deleter_);
 		}
 		std::unique_ptr<T, DeleterType> GetUniqueObject(Args... args) {
-			auto object = AllocObject();
+			auto object = AllocObject(std::forward<Args>(args)...);
 			reset_func_(object, std::forward<Args>(args)...);
 			return std::move(std::unique_ptr<T, DeleterType>(object, deleter_));
+		}
+		template <typename... FuncArgs>
+		static std::unique_ptr<T, DeleterType> GetUniqueObjectWithDefault(FuncArgs... args) {
+			auto object = new T(std::forward<FuncArgs>(args)...);
+			return std::move(std::unique_ptr<T, DeleterType>(object, DefaultDeleter));
 		}
 	protected:
 		void Deleter(T* t) {
 			AddObject(t);
+		}
+		static void DefaultDeleter(T* t) {
+			delete t;
 		}
 		void AddObject(T* t) {
 			mutex_.lock();
@@ -47,14 +55,14 @@ namespace bcore {
 			cout << "addobject:" << count << endl;
 		}
 		
-		T* AllocObject() {
+		T* AllocObject(Args... args) {
 			if (count <= 0) {
-				return new T();
+				return new T(std::forward<Args>(args)...);
 			}
 			mutex_.lock();
 			if (count <= 0) {
 				mutex_.unlock();
-				return new T();
+				return new T(std::forward<Args>(args)...);
 			}
 			auto object = pool_list_[--count];
 			if (min_count_ > count) {
@@ -84,6 +92,7 @@ namespace bcore {
 		std::mutex mutex_;
 		std::function<void(T*, Args...)> reset_func_;
 		DeleterType deleter_;
+		DeleterType default_deleter_;
 		int min_count_ = std::numeric_limits<int>::max();
 		int max_count_ = 0;
 	};

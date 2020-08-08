@@ -10,7 +10,8 @@ namespace bcore_basio {
 		TcpSession(std::shared_ptr<ThreadPoolContext> threadCtx) :
 			thread_context_(threadCtx),
 			socket_(*(thread_context_->ctx)),
-			strand_(*(thread_context_->ctx))
+			strand_(*(thread_context_->ctx)),
+			buffer_()
 		{ }
 
 		tcp::socket& Socket() { return socket_; }

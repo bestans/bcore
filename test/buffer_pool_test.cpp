@@ -3,7 +3,7 @@
 #include <iostream>
 #include <atomic>
 using namespace std;
-
+using namespace bcore;
 TEST(bufferpool, Log2Int) {
 	bool has_left = false;
 	EXPECT_EQ(Log2Int(2, has_left), 1) << "Log2Int(2) == 1";
@@ -39,8 +39,7 @@ TEST(bufferpool, test_memory) {
 		for (int i = 0; i < 10; i++) {
 			threads.emplace_back([&]() {
 				for (int i = 0; i < 10000; i++) {
-					auto buffer = pool.GetBuffer(i);
-					pool.RecycleBuffer(std::move(buffer));
+					auto buffer = pool.AllocBuffer(i);
 				}
 				});
 		}
