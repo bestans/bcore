@@ -34,12 +34,12 @@ namespace bcore {
 		typedef std::shared_ptr<TimerNode> TimerNodeType;
 
 		template <typename F, typename... Args>
-		inline static void AddFuncAfterDuration(int64_t duration, F&& f, Args&&... args) {
-			Timer::Instance().addTimer(duration + BTime::GetMilliTime(), std::move(std::bind(std::forward<F>(f), std::forward<Args>(args)...)));
+		inline static TimerNodeType AddFuncAfterDuration(int64_t duration, F&& f, Args&&... args) {
+			return Timer::Instance().addTimer(duration + BTime::GetMilliTime(), std::move(std::bind(std::forward<F>(f), std::forward<Args>(args)...)));
 		}
 		template <typename F, typename... Args>
-		static void AddRepeatedTimer(int64_t duration, int repeat_num, F&& f, Args&&... args) {
-			AddRepeatedTimerLocal(duration, repeat_num, std::move(std::bind(std::forward<F>(f), std::forward<Args>(args)...)));
+		static TimerNodeType AddRepeatedTimer(int64_t duration, int repeat_num, F&& f, Args&&... args) {
+			return AddRepeatedTimerLocal(duration, repeat_num, std::move(std::bind(std::forward<F>(f), std::forward<Args>(args)...)));
 		}
 		static void Stop() {
 			Timer::Instance().running_ = false;
@@ -47,8 +47,8 @@ namespace bcore {
 		}
 		Timer() : thread_([this]() {Run(); }) { }
 	protected:
-		static void AddRepeatedTimerLocal(int64_t duration, int repeat_num, TimerFunc f) {
-			Timer::Instance().addTimer(duration + BTime::GetMilliTime(), [local_f = std::move(f), repeat_num, duration]{
+		static TimerNodeType AddRepeatedTimerLocal(int64_t duration, int repeat_num, TimerFunc f) {
+			return Timer::Instance().addTimer(duration + BTime::GetMilliTime(), [local_f = std::move(f), repeat_num, duration]{
 				local_f();
 				if (repeat_num > 1 || repeat_num == -1) {
 					AddRepeatedTimerLocal(duration, repeat_num == -1 ? -1 : repeat_num - 1, std::move(local_f));
@@ -88,13 +88,15 @@ namespace bcore {
 				}
 			}
 		}
-		void addTimer(int64_t end_time, TimerFunc&& f) {
+		TimerNodeType addTimer(int64_t end_time, TimerFunc&& f) {
 			std::unique_lock<std::mutex> lock(mutex_);
 			auto is_empty = timer_list_.empty();
-			timer_list_.emplace(std::move(std::make_shared<TimerNode>(end_time, std::move(f))));
+			auto timerNode = std::make_shared<TimerNode>(end_time, std::move(f));
+			timer_list_.push(timerNode);
 			if (is_empty) {
 				condition_.notify_one();
 			}
+			return timerNode;
 		}
 
 		struct TimerNodeCmp {

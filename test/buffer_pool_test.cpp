@@ -36,13 +36,16 @@ TEST(bufferpool, test_memory) {
 	{
 		std::vector<std::thread> threads;
 		BufferPool<TestBuffer> pool(10, 2);
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 11; i++) {
 			threads.emplace_back([&]() {
-				for (int i = 0; i < 10000; i++) {
-					auto buffer = pool.AllocBuffer(i);
+				for (int i = 0; i < 100000; i++) {
+					auto buffer = pool.AllocBuffer(100);
 				}
 				});
 		}
+
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
 		for (auto& t : threads) {
 			t.join();
 		}

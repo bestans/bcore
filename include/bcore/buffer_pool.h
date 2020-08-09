@@ -89,14 +89,14 @@ namespace bcore {
 		SectionBuffer() {}
 		SectionBuffer(uint32_t buffer_size) :
 			buffer_size_(buffer_size) {
-			pool_ = std::make_shared<ObjectPool<T, uint32_t>>();
+			pool_ = ObjectPool<T>::NewPool();
 		}
 		std::unique_ptr<T, DeleterType> AllocBuffer() {
 			return pool_->GetUniqueObject(buffer_size_);
 		}
 	private:
 		uint32_t buffer_size_;
-		std::shared_ptr<ObjectPool<T, uint32_t>> pool_;
+		std::shared_ptr<ObjectPool<T>> pool_;
 	};
 	template <class T>
 	class BufferPool {
@@ -118,7 +118,7 @@ namespace bcore {
 		}
 		std::unique_ptr<T, DeleterType> AllocBuffer(uint32_t min_size) {
 			if (min_size < min_buffer_size_) {
-				return ObjectPool<T, uint32_t>::GetUniqueObjectWithDefault(min_size);
+				return ObjectPool<T>::GetUniqueObjectWithDefault(min_size);
 			}
 			bool has_left = false;
 			auto index = Log2Int(min_size, has_left);
@@ -126,7 +126,7 @@ namespace bcore {
 			if (index > min_index_ && index <= max_index_) {
 				return std::move(buffer_pool_[index - min_index_ - 1].AllocBuffer());
 			}
-			return ObjectPool<T, uint32_t>::GetUniqueObjectWithDefault(min_size);
+			return ObjectPool<T>::GetUniqueObjectWithDefault(min_size);
 		}
 
 	private:
