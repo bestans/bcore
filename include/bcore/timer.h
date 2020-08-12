@@ -10,6 +10,7 @@
 #include "data_struct/data_heap.h"
 
 namespace bcore {
+	void TestCoreLib();
 	static int timer_node_times = 0;
 	class Timer : Singleton<Timer> {
 	private:
@@ -19,12 +20,10 @@ namespace bcore {
 			friend Timer;
 			TimerNode(int64_t end_t, TimerFunc& f) : end_time(end_t), stop(false), func(std::move(f)) {
 				timer_node_times++;
-				printf("timer_node_times:=%d\n", timer_node_times);
 			}
 			void StopTimer() { stop = true; }
 			~TimerNode() {
 				timer_node_times--;
-				printf("~timer_node_times:=%d\n", timer_node_times);
 			}
 		protected:
 			int64_t end_time;

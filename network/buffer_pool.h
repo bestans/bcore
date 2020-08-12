@@ -82,16 +82,16 @@ private:
 };
 
 template <class T>
-class SectionBuffer {
+class SectionBufferTest {
 public:
-	SectionBuffer(uint32_t max_count, uint32_t buffer_size) :
+	SectionBufferTest(uint32_t max_count, uint32_t buffer_size) :
 		max_count_(max_count),
 		buffer_size_(buffer_size),
 		mutex_(new std::mutex()),
 		data_list_(max_count, [=]() { return std::make_unique<T>(buffer_size); }) {
 
 	}
-	SectionBuffer() : SectionBuffer(0, 0) {
+	SectionBufferTest() : SectionBufferTest(0, 0) {
 
 	}
 	std::unique_ptr<T> GetBuffer() {
@@ -109,9 +109,9 @@ private:
 	SimpleStack<T> data_list_;
 };
 template <class T>
-class BufferPool {
+class BufferPoolTest {
 public:
-	BufferPool(uint32_t max_index, uint32_t min_index) : max_index_(max_index), min_index_(min_index) {
+	BufferPoolTest(uint32_t max_index, uint32_t min_index) : max_index_(max_index), min_index_(min_index) {
 		if (min_index < 1)
 			throw new std::exception("invalid min_index:must >= 1");
 		if (max_index >= 32 || max_index <= min_index)
@@ -122,7 +122,7 @@ public:
 		auto cur_index = 0;
 		for (uint32_t i = min_index+1; i <= max_index; i++) {
 			auto buffer_size = 1 << i;
-			buffer_pool_.emplace_back(std::move(SectionBuffer<T>(max_buffer_size_ / buffer_size, buffer_size)));
+			buffer_pool_.emplace_back(std::move(SectionBufferTest<T>(max_buffer_size_ / buffer_size, buffer_size)));
 		}
 	}
 	std::unique_ptr<T> GetBuffer(uint32_t min_size) {
@@ -150,7 +150,7 @@ public:
 	}
 
 private:
-	std::vector<SectionBuffer<T>> buffer_pool_;
+	std::vector<SectionBufferTest<T>> buffer_pool_;
 	uint32_t max_index_;
 	uint32_t min_index_;
 	uint32_t max_buffer_size_;

@@ -16,7 +16,10 @@ ENDIF()
 link_directories(
     ${LIB_DIR}
 )
-SET(G_TEST_LIB ${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR}/gtest.lib)
+SET(LIB_SUFFIX ".lib")
+SET(G_TEST_LIB ${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR}/gtest${LIB_SUFFIX})
+SET(BCORE_LIB ${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR}/bcore${LIB_SUFFIX})
+
 SET(ROOT_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 message(G_TEST_LIB\ ${G_TEST_LIB})
 
@@ -25,7 +28,7 @@ include_directories(
     F:/github_code/googletest-release-1.10.0/googletest/include
     F:/github_code/asio-1.16.1/include
 )
-
+SET(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
 # 包含子项目。
 add_subdirectory ("test_project")
 add_subdirectory ("network")

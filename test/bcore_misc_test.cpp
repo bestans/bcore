@@ -114,13 +114,13 @@ namespace test {
 		//}
 		cout << endl;
 		{
-			ObjectPool<PriorData> pool([](PriorData* data) { data->value++; });
+			auto pool = ObjectPool<PriorData>::NewPool(100, [](PriorData* data) { data->value++; });
 			for (int i = 0; i < 10; i++) {
 				{
-					pool.GetUniqueObject(); 
+					pool->GetUniqueObject(); 
 				}
 				{
-					pool.GetSharedObject();
+					pool->GetSharedObject();
 				}
 			}
 			//{
@@ -128,7 +128,7 @@ namespace test {
 			//}
 			{
 				cout << "xxxxx\n";
-				cout << "times:" << pool.GetSharedObject()->value << endl;
+				cout << "times:" << pool->GetSharedObject()->value << endl;
 			}
 		}
 	}

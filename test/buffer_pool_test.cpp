@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <iostream>
 #include <atomic>
+#include "bcore/bcore_util.h"
 using namespace std;
 using namespace bcore;
 TEST(bufferpool, Log2Int) {
@@ -14,6 +15,7 @@ public:
 	static std::atomic<uint32_t> alloc, free_size;
 	static uint32_t alloc11;
 	static uint32_t free_size11;
+	
 	TestBuffer(uint32_t size) {
 		size_ = size;
 		alloc += size;
@@ -35,7 +37,7 @@ TEST(bufferpool, test_memory) {
 	TestBuffer::free_size = 0;
 	{
 		std::vector<std::thread> threads;
-		BufferPool<TestBuffer> pool(10, 2);
+		BufferPoolTest<TestBuffer> pool(10, 2, 10);
 		for (int i = 0; i < 11; i++) {
 			threads.emplace_back([&]() {
 				for (int i = 0; i < 100000; i++) {
@@ -43,13 +45,64 @@ TEST(bufferpool, test_memory) {
 				}
 				});
 		}
-
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		for (int i = 0; i < 11; i++) {
+			threads.emplace_back([&]() {
+				for (int i = 0; i < 100000; i++) {
+					auto buffer = pool.AllocBuffer(i);
+				}
+				});
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		for (auto& t : threads) {
 			t.join();
 		}
+		EXPECT_EQ(TestBuffer::alloc, TestBuffer::free_size) << "alloc == free";
 	}
-	EXPECT_EQ(TestBuffer::alloc, TestBuffer::free_size) << "alloc == free";
 	cout << "test_memory:alloc_size=" << TestBuffer::alloc << ",free_size=" << TestBuffer::free_size << endl;
+}
+
+class TestByteBuffer {
+public:
+	TestByteBuffer(uint32_t size) {
+		ptr = new char[size];
+	}
+	~TestByteBuffer() {
+		delete[] ptr;
+	}
+	char* ptr = nullptr;
+};
+TEST(bufferpool, test_memory2) {
+	BufferPoolTest<TestByteBuffer> pool(10, 2, 1000);
+	{
+		StopWatch watch;
+		std::vector<std::thread> threads;
+		for (int i = 0; i < 10; i++) {
+			threads.emplace_back([&]() {
+				for (int i = 0; i < 100000; i++) {
+					auto buffer = pool.AllocBuffer(10);
+				}
+				});
+		}
+		for (auto& t : threads) {
+			t.join();
+		}
+		std::cout << "cost miliseconds=" << watch.CostMilliSeconds() << std::endl;
+	}
+	{
+		StopWatch watch;
+		std::vector<std::thread> threads;
+		for (int i = 0; i < 10; i++) {
+			threads.emplace_back([&]() {
+				for (int i = 0; i < 100000; i++) {
+					auto buffer = std::make_shared<TestByteBuffer>(10);
+				}
+				});
+		}
+		for (auto& t : threads) {
+			t.join();
+		}
+		std::cout << "cost2 miliseconds=" << watch.CostMilliSeconds() << std::endl;
+	}
+	TestCoreLib();
 }

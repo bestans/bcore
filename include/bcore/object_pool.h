@@ -19,18 +19,27 @@ namespace bcore {
 		ObjectPool(int64_t pool_check_interval) : timer_check_interval_(pool_check_interval) {
 			deleter_ = [this](T* t) { Deleter(t); };
 		}
+		ObjectPool(int64_t pool_check_interval, ResetFuncType reset_func) :
+			timer_check_interval_(pool_check_interval),
+			reset_func_(reset_func)
+		{
+			deleter_ = [this](T* t) { Deleter(t); };
+		}
 		~ObjectPool() {
-			for (int i = 0; i < count; i++) {
+			for (int i = 0; i < count_; i++) {
 				delete pool_list_[i];
 				pool_list_[i] = nullptr;
 			}
-			count = 0;
+			count_ = 0;
 		}
 		static std::shared_ptr<ObjectPool> NewPool() {
 			return std::make_shared<ObjectPool>();
 		}
 		static std::shared_ptr<ObjectPool> NewPool(int64_t check_interval) {
 			return std::make_shared<ObjectPool>(std::move(check_interval));
+		}
+		static std::shared_ptr<ObjectPool> NewPool(int64_t check_interval, ResetFuncType reset_func) {
+			return std::make_shared<ObjectPool>(std::move(check_interval), std::move(reset_func));
 		}
 		template <typename... FuncArgs>
 		std::shared_ptr<T> GetSharedObject(FuncArgs... args) {
@@ -62,16 +71,13 @@ namespace bcore {
 		}
 		void AddObject(T* t) {
 			mutex_.lock();
-			if (pool_list_.size() > count) {
-				pool_list_[count] = t;
+			if (pool_list_.size() > count_) {
+				pool_list_[count_] = t;
 			}
 			else {
 				pool_list_.push_back(t);
 			}
-			count++;
-			if (max_count_ < count) {
-				max_count_ = count;
-			}
+			count_++;
 			if (timer_node_ == nullptr) {
 				//设置定时器回收
 				auto self = shared_from_this();
@@ -84,38 +90,34 @@ namespace bcore {
 
 		template <typename... FuncArgs>
 		T* AllocObject(FuncArgs... args) {
-			//if (count <= 0) {
-			//	return new T(std::forward<FuncArgs>(args)...);
-			//}
+			if (count_ <= 0) {
+				return new T(std::forward<FuncArgs>(args)...);
+			}
 			mutex_.lock();
-			if (count <= 0) {
+			if (count_ <= 0) {
 				mutex_.unlock();
 				return new T(std::forward<FuncArgs>(args)...);
 			}
-			auto object = pool_list_[--count];
-			pool_list_[count] = nullptr;
-			if (min_count_ > count) {
-				min_count_ = count;
+			auto object = pool_list_[--count_];
+			if (min_count_ > count_) {
+				min_count_ = count_;
 			}
 			mutex_.unlock();
 			return object;
 		}
 		void UpdateObject() {
 			mutex_.lock();
-			auto remove_count = (min_count_ == std::numeric_limits<int>::max() || max_count_ == 0) ? count / 2 : max_count_ - min_count_;
-
-			std::cout << "updateobject::remove count=" << count - remove_count << ",count=" << count << endl;
+			auto remove_count = std::min((min_count_ + 1) / 2, count_);
 			if (remove_count > 0) {
 				if (remove_count >= 64) {
 					remove_count >>= 1;
 				}
 				while (remove_count-- > 0) {
-					delete pool_list_[--count];
+					delete pool_list_[--count_];
 				}
 			}
-			min_count_ = std::numeric_limits<int>::max();
-			max_count_ = 0;
-			if (count > 0) {
+			min_count_ = count_;
+			if (count_ > 0) {
 				auto self = shared_from_this();
 				timer_node_ = Timer::AddFuncAfterDuration(timer_check_interval_, [self]() {
 					self->UpdateObject();
@@ -124,17 +126,15 @@ namespace bcore {
 			else {
 				timer_node_.reset();
 			}
-			std::cout << "updateobject2::remove count=" << count - remove_count << ",count=" << count << endl;
 			mutex_.unlock();
 		}
 	private:
 		DeleterType deleter_;
 		std::vector<T*> pool_list_;
-		int count = 0;
+		int count_ = 0;
 		std::mutex mutex_;
 		ResetFuncType reset_func_ = nullptr;
-		int min_count_ = std::numeric_limits<int>::max();
-		int max_count_ = 0;
+		int min_count_ = 0;
 		int timer_check_interval_ = OBJECT_POOL_CHECK_INTERVAL;
 		std::shared_ptr<Timer::TimerNode> timer_node_;
 	};

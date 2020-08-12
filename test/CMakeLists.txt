@@ -9,6 +9,6 @@ include_directories(
     # F:/github_code/googletest-release-1.10.0/googletest/include
 )
 
-target_link_libraries(bcore_test ${G_TEST_LIB})
+target_link_libraries(bcore_test ${G_TEST_LIB} ${BCORE_LIB})
 
 add_subdirectory ("test_asio")
