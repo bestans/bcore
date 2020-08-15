@@ -43,7 +43,7 @@ namespace bcore {
 		}
 		template <typename... FuncArgs>
 		std::shared_ptr<T> GetSharedObject(FuncArgs... args) {
-			auto object = AllocObject();
+			auto object = AllocObject(std::forward<FuncArgs>(args)...);
 			if (reset_func_ != nullptr) {
 				reset_func_(object);
 			}

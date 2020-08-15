@@ -6,6 +6,7 @@
 #include <list>
 #include <functional>
 #include "object_pool.h"
+#include <iostream>
 
 namespace bcore {
 	const uint32_t log2Table[32] = { 0,0,1,1,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,3,3 };
@@ -26,7 +27,10 @@ namespace bcore {
 	class ByteBuf {
 	public:
 		ByteBuf(uint32_t size) {
-
+			std::cout << "ByteBuf\n";
+		}
+		~ByteBuf() {
+			std::cout << "~ByteBuf\n";
 		}
 	};
 
@@ -107,31 +111,19 @@ namespace bcore {
 		std::shared_ptr<ObjectPool<ByteBuf>> pool_;
 	};
 
-	class BufferPool : Singleton<BufferPool> {
+	class BufferPool : public Singleton<BufferPool> {
 	public:
 		BufferPool();
-		BufferPool(uint32_t max_index, uint32_t min_index, int64_t pool_check_interval) :
-			max_index_(max_index), min_index_(min_index) {
-			if (min_index < 1)
-				throw new std::exception("invalid min_index:must >= 1");
-			if (max_index >= 32 || max_index <= min_index)
-				throw new std::exception("invalid max_index:must < 32 && > min_index");
-
-			max_buffer_size_ = 1 << max_index;
-			min_buffer_size_ = (1 << min_index) + 1;
-			auto cur_index = 0;
-			for (uint32_t i = min_index + 1; i <= max_index; i++) {
-				auto buffer_size = 1 << i;
-				buffer_pool_.emplace_back(std::move(SectionBuffer(buffer_size, pool_check_interval)));
-			}
+		static inline UniqueByteBuf AllocBuffers(uint32_t min_size) {
+			return Instance().AllocBuffer(min_size);
 		}
 		UniqueByteBuf AllocBuffer(uint32_t min_size);
 		SharedByteBuf AllocSharedBuffer(uint32_t min_size);
 
 	private:
 		std::vector<SectionBuffer> buffer_pool_;
-		uint32_t max_index_;
-		uint32_t min_index_;
+		//uint32_t max_index_;
+		//uint32_t min_index_;
 		uint32_t max_buffer_size_;
 		uint32_t min_buffer_size_;
 	};
