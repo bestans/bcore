@@ -23,14 +23,30 @@ namespace bcore {
 
 	//128M 64M 32M 16M 8M 4M 2M 1M 512K 256K 128K 64K
 	//
-
+#ifdef BTEST
+	class ByteBuf;
+	static std::function<void(ByteBuf*, bool)> ByteBufAlloc = nullptr;
+	static int testvvvvv = 0;
+	static void SetByteBufAlloc(std::function<void(ByteBuf*, bool)> f) {
+		ByteBufAlloc = f;
+		testvvvvv = 100;
+	}
+#endif
 	class ByteBuf {
 	public:
 		ByteBuf(uint32_t size) {
-			std::cout << "ByteBuf\n";
+#ifdef BTEST
+			if (ByteBufAlloc != nullptr) {
+				ByteBufAlloc(this, true);
+			}
+#endif
 		}
 		~ByteBuf() {
-			std::cout << "~ByteBuf\n";
+#ifdef BTEST
+			if (ByteBufAlloc != nullptr) {
+				ByteBufAlloc(this, false);
+			}
+#endif
 		}
 	};
 

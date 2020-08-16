@@ -24,7 +24,7 @@ namespace bcore {
 		auto index = Log2Int(min_size, has_left);
 		if (has_left) index++;
 		if (index > BufferPoolMinIndex && index <= BufferPoolMaxIndex) {
-			return std::move(buffer_pool_[index - min_index_ - 1].AllocBuffer());
+			return std::move(buffer_pool_[index - BufferPoolMinIndex - 1].AllocBuffer());
 		}
 		return ObjectPool<ByteBuf>::GetUniqueObjectWithDefault(min_size);
 	}
@@ -36,7 +36,7 @@ namespace bcore {
 		auto index = Log2Int(min_size, has_left);
 		if (has_left) index++;
 		if (index > BufferPoolMinIndex && index <= BufferPoolMaxIndex) {
-			return std::move(buffer_pool_[index - min_index_ - 1].AllocSharedBuffer());
+			return std::move(buffer_pool_[index - BufferPoolMinIndex - 1].AllocSharedBuffer());
 		}
 		return std::make_shared<ByteBuf>(min_size);
 	}

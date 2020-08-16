@@ -3,8 +3,9 @@
 #include <iostream>
 #include <atomic>
 #include "bcore/bcore_util.h"
-using namespace std;
+#include "bcore/buffer_pool.h"
 using namespace bcore;
+using namespace std;
 TEST(bufferpool, Log2Int) {
 	bool has_left = false;
 	EXPECT_EQ(Log2Int(2, has_left), 1) << "Log2Int(2) == 1";
@@ -106,8 +107,18 @@ uint32_t TestBuffer::free_size11 = 0;
 //	}
 //	TestCoreLib();
 //}
+
 TEST(buffer_pool, test) {
 	{
+
+		SetByteBufAlloc([](ByteBuf* buf, bool alloc) {
+			if (alloc) {
+				cout << "construct1111111111111\n";
+			}
+			else {
+				cout << "destruct11111111111111\n";
+			}
+		});
 		auto buffer = BufferPool::AllocBuffers(111);
 	}
 

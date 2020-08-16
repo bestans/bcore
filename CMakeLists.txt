@@ -29,6 +29,7 @@ include_directories(
     F:/github_code/asio-1.16.1/include
 )
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
+add_definitions(-DBTEST)
 # 包含子项目。
 add_subdirectory ("test_project")
 add_subdirectory ("network")
