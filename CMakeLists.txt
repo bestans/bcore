@@ -7,6 +7,7 @@ project ("bcore-project")
 
 IF (CMAKE_BUILD_TYPE MATCHES "Debug")
     SET(LIB_DIR "lib/x64-debug")
+    add_definitions(-D_DEBUG)
 ELSEIF(CMAKE_BUILD_TYPE MATCHES "Release")
     SET(LIB_DIR "lib/x64-release")
 ELSE()
@@ -30,6 +31,7 @@ include_directories(
 )
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
 add_definitions(-DBTEST)
+
 # 包含子项目。
 add_subdirectory ("test_project")
 add_subdirectory ("network")

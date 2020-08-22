@@ -25,11 +25,10 @@ namespace bcore {
 	//
 #ifdef BTEST
 	class ByteBuf;
-	static std::function<void(ByteBuf*, bool)> ByteBufAlloc = nullptr;
-	static int testvvvvv = 0;
-	static void SetByteBufAlloc(std::function<void(ByteBuf*, bool)> f) {
+	typedef std::function<void(ByteBuf*, bool)> AllocType;
+	extern AllocType ByteBufAlloc;
+	static void SetByteBufAlloc(AllocType f) {
 		ByteBufAlloc = f;
-		testvvvvv = 100;
 	}
 #endif
 	class ByteBuf {
@@ -130,11 +129,15 @@ namespace bcore {
 	class BufferPool : public Singleton<BufferPool> {
 	public:
 		BufferPool();
-		static inline UniqueByteBuf AllocBuffers(uint32_t min_size) {
-			return Instance().AllocBuffer(min_size);
+		static inline UniqueByteBuf AllocBuffer(uint32_t min_size) {
+			return Instance().rawAllocBuffer(min_size);
 		}
-		UniqueByteBuf AllocBuffer(uint32_t min_size);
-		SharedByteBuf AllocSharedBuffer(uint32_t min_size);
+		static inline SharedByteBuf AllocSharedBuffer(uint32_t min_size) {
+			return Instance().rawAllocSharedBuffer(min_size);
+		}
+	protected:
+		UniqueByteBuf rawAllocBuffer(uint32_t min_size);
+		SharedByteBuf rawAllocSharedBuffer(uint32_t min_size);
 
 	private:
 		std::vector<SectionBuffer> buffer_pool_;

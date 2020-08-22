@@ -20,8 +20,8 @@ void test_dataqueue() {
 	vector<thread> threads; 
 	for (int i = 0; i < send_t_count; i++) {
 		threads.emplace_back([&] {
-			int i = 0;
-			while (++i <= maxC) {
+			int tempi = 0;
+			while (++tempi <= maxC) {
 				if (dataq.Push(int(1))) {
 					real_total_send_times++;
 				}
@@ -56,6 +56,7 @@ void test_dataqueue() {
 	for (auto& t : threads) {
 		t.join();
 	}
+	threads.clear();
 	auto endTime = std::chrono::high_resolution_clock::now();
 	auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - beginTime);
 	std::cout << "elapsed time is " << elapsedTime.count() << " milliseconds" << "," << total_send_times << "," << multiTimes << "," << receiveC << std::endl;

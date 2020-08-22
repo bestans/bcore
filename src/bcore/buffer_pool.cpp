@@ -1,6 +1,10 @@
 #include "bcore/buffer_pool.h"
 
 namespace bcore {
+
+#ifdef BTEST
+	AllocType ByteBufAlloc = nullptr;
+#endif
 	const uint32_t BufferPoolMinIndex = 2;
 	const uint32_t BufferPoolMaxIndex = 10;
 	const uint32_t BufferPoolCheckInterval = 60000;
@@ -16,7 +20,7 @@ namespace bcore {
 			buffer_pool_.emplace_back(std::move(SectionBuffer(buffer_size, interval)));
 		}
 	}
-	UniqueByteBuf BufferPool::AllocBuffer(uint32_t min_size) {
+	UniqueByteBuf BufferPool::rawAllocBuffer(uint32_t min_size) {
 		if (min_size < min_buffer_size_) {
 			return ObjectPool<ByteBuf>::GetUniqueObjectWithDefault(min_size);
 		}
@@ -28,7 +32,7 @@ namespace bcore {
 		}
 		return ObjectPool<ByteBuf>::GetUniqueObjectWithDefault(min_size);
 	}
-	SharedByteBuf BufferPool::AllocSharedBuffer(uint32_t min_size) {
+	SharedByteBuf BufferPool::rawAllocSharedBuffer(uint32_t min_size) {
 		if (min_size < min_buffer_size_) {
 			return std::make_shared<ByteBuf>(min_size);
 		}

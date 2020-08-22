@@ -4,6 +4,7 @@
 #include <atomic>
 #include "bcore/bcore_util.h"
 #include "bcore/buffer_pool.h"
+
 using namespace bcore;
 using namespace std;
 TEST(bufferpool, Log2Int) {
@@ -110,16 +111,35 @@ uint32_t TestBuffer::free_size11 = 0;
 
 TEST(buffer_pool, test) {
 	{
+		cout << "1111111=" << sizeof(ByteBuf) << endl;
+		std::atomic<int> alloc_times, free_times;
+		alloc_times = free_times = 0;
+		SetByteBufAlloc([&](ByteBuf* buf, bool alloc) {
 
-		SetByteBufAlloc([](ByteBuf* buf, bool alloc) {
-			if (alloc) {
-				cout << "construct1111111111111\n";
+			//cout << "alloc and free:" << alloc << endl;;
+			alloc ? alloc_times++ : free_times++;
+			});
+		std::vector<std::thread> threads;
+		threads.emplace_back([]() {
+			for (int i = 0; i < 10; i++) {
+				for (int j = 0; j < 1000; j++) {
+					auto ptr = BufferPool::AllocBuffer(j);
+					auto ptr2 = BufferPool::AllocSharedBuffer(j* 1000);
+				}
 			}
-			else {
-				cout << "destruct11111111111111\n";
-			}
-		});
-		auto buffer = BufferPool::AllocBuffers(111);
+			});
+		for (auto& t : threads) {
+			t.join();
+		}
+		int times = 3;
+		Timer::AddRepeatedTimer(50, times, [&]() {
+			cout << "buffer pool timer:" << times << endl;
+			times--;
+			BTime::SetOffset((10 - times) * 60000);
+			});
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+		cout << "alloc_times=" << alloc_times << ",free_times=" << free_times << endl;
+		EXPECT_EQ(alloc_times, free_times) << "alloc free not equal\n";
 	}
 
 }
