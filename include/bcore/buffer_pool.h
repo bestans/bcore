@@ -33,7 +33,8 @@ namespace bcore {
 #endif
 	class ByteBuf {
 	public:
-		ByteBuf(uint32_t size) {
+		ByteBuf(uint32_t size) : size_(size) {
+			buffer_ = new char[size];
 #ifdef BTEST
 			if (ByteBufAlloc != nullptr) {
 				ByteBufAlloc(this, true);
@@ -41,12 +42,24 @@ namespace bcore {
 #endif
 		}
 		~ByteBuf() {
+			size_ = 0;
+			delete[] buffer_;
+			buffer_ = nullptr;
 #ifdef BTEST
 			if (ByteBufAlloc != nullptr) {
 				ByteBufAlloc(this, false);
 			}
 #endif
 		}
+		char* GetBuffer() {
+			return buffer_;
+		}
+		uint32_t GetSize() {
+			return size_;
+		}
+	private:
+		uint32_t size_;
+		char* buffer_;
 	};
 
 	//template <class T>
@@ -110,7 +123,7 @@ namespace bcore {
 
 	class SectionBuffer {
 	public:
-		SectionBuffer() {}
+		SectionBuffer() : buffer_size_(0) {}
 		SectionBuffer(uint32_t buffer_size, int64_t pool_check_interval) :
 			buffer_size_(buffer_size) {
 			pool_ = ObjectPool<ByteBuf>::NewPool(pool_check_interval);

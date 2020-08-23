@@ -108,7 +108,6 @@ namespace bcore {
 		void UpdateObject() {
 			mutex_.lock();
 			auto remove_count = std::min((min_count_ + 1) / 2, count_);
-			std::cout << "UpdateObject:remove_count=" << remove_count << ",min=" << min_count_ << std::endl;
 			if (remove_count > 0) {
 				if (remove_count >= 64) {
 					remove_count >>= 1;

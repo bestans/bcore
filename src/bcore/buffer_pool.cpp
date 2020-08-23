@@ -6,7 +6,7 @@ namespace bcore {
 	AllocType ByteBufAlloc = nullptr;
 #endif
 	const uint32_t BufferPoolMinIndex = 2;
-	const uint32_t BufferPoolMaxIndex = 10;
+	const uint32_t BufferPoolMaxIndex = 18;
 	const uint32_t BufferPoolCheckInterval = 60000;
 	const uint32_t BufferPoolCheckIntervalStep = 6000;
 	const uint32_t BufferPoolCheckIntervalMin = 6000;
