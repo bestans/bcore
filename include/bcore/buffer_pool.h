@@ -33,8 +33,8 @@ namespace bcore {
 #endif
 	class ByteBuf {
 	public:
-		ByteBuf(uint32_t size) : size_(size) {
-			buffer_ = new char[size];
+		ByteBuf(uint32_t cap) : cap_(cap), len_(0) {
+			buffer_ = new char[cap];
 #ifdef BTEST
 			if (ByteBufAlloc != nullptr) {
 				ByteBufAlloc(this, true);
@@ -42,7 +42,7 @@ namespace bcore {
 #endif
 		}
 		~ByteBuf() {
-			size_ = 0;
+			cap_ = 0;
 			delete[] buffer_;
 			buffer_ = nullptr;
 #ifdef BTEST
@@ -51,82 +51,54 @@ namespace bcore {
 			}
 #endif
 		}
-		char* GetBuffer() {
+		char* Data() {
 			return buffer_;
 		}
-		uint32_t GetSize() {
-			return size_;
+		uint32_t Cap() {
+			return cap_;
+		}
+		uint32_t Len() {
+			return len_;
+		}
+		void WriteBuffer(void *ptr, uint32_t size) {
+			auto real_size = std::min(size, cap_ - len_);
+			memcpy(buffer_ + len_, ptr, real_size);
+			len_ += real_size;
+		}
+		inline void AddLen(uint32_t add) {
+			len_ += add;
+			if (len_ > cap_) {
+				len_ = cap_;
+			}
+		}
+		inline void ResetLen() {
+			len_ = 0;
 		}
 	private:
-		uint32_t size_;
+		uint32_t cap_;
+		uint32_t len_;
 		char* buffer_;
 	};
-
-	//template <class T>
-	//class SectionBuffer {
-	//public:
-	//	typedef std::function<void(T*)> DeleterType;
-	//	SectionBuffer() {}
-	//	SectionBuffer(uint32_t buffer_size) :
-	//		buffer_size_(buffer_size) {
-	//		pool_ = ObjectPool<T>::NewPool();
-	//	}
-	//	std::unique_ptr<T, DeleterType> AllocBuffer() {
-	//		return pool_->GetUniqueObject(buffer_size_);
-	//	}
-	//private:
-	//	uint32_t buffer_size_;
-	//	std::shared_ptr<ObjectPool<T>> pool_;
-	//};
-	//template <class T>
-	//class BufferPool {
-	//public:
-	//	typedef std::function<void(T*)> DeleterType;
-	//	BufferPool(uint32_t max_index, uint32_t min_index) : max_index_(max_index), min_index_(min_index) {
-	//		if (min_index < 1)
-	//			throw new std::exception("invalid min_index:must >= 1");
-	//		if (max_index >= 32 || max_index <= min_index)
-	//			throw new std::exception("invalid max_index:must < 32 && > min_index");
-
-	//		max_buffer_size_ = 1 << max_index;
-	//		min_buffer_size_ = (1 << min_index) + 1;
-	//		auto cur_index = 0;
-	//		for (uint32_t i = min_index + 1; i <= max_index; i++) {
-	//			auto buffer_size = 1 << i;
-	//			buffer_pool_.emplace_back(std::move(SectionBuffer<T>(buffer_size)));
-	//		}
-	//	}
-	//	std::unique_ptr<T, DeleterType> AllocBuffer(uint32_t min_size) {
-	//		if (min_size < min_buffer_size_) {
-	//			return ObjectPool<T>::GetUniqueObjectWithDefault(min_size);
-	//		}
-	//		bool has_left = false;
-	//		auto index = Log2Int(min_size, has_left);
-	//		if (has_left) index++;
-	//		if (index > min_index_ && index <= max_index_) {
-	//			return std::move(buffer_pool_[index - min_index_ - 1].AllocBuffer());
-	//		}
-	//		return ObjectPool<T>::GetUniqueObjectWithDefault(min_size);
-	//	}
-
-	//private:
-	//	std::vector<SectionBuffer<T>> buffer_pool_;
-	//	uint32_t max_index_;
-	//	uint32_t min_index_;
-	//	uint32_t max_buffer_size_;
-	//	uint32_t min_buffer_size_;
-	//};
-
+	static void ResetByteBuf(ByteBuf* buf) {
+		buf->ResetLen();
+	}
 	using DeleterType = std::function<void(ByteBuf*)>;
 	using UniqueByteBuf = std::unique_ptr<ByteBuf, DeleterType>;
 	using SharedByteBuf = std::shared_ptr<ByteBuf>;
+
+	class ByteHelper {
+	public:
+		static void WriteData(ByteBuf* buf, void* ptr, uint32_t size) {
+			
+		}
+	};
 
 	class SectionBuffer {
 	public:
 		SectionBuffer() : buffer_size_(0) {}
 		SectionBuffer(uint32_t buffer_size, int64_t pool_check_interval) :
 			buffer_size_(buffer_size) {
-			pool_ = ObjectPool<ByteBuf>::NewPool(pool_check_interval);
+			pool_ = ObjectPool<ByteBuf>::NewPool(pool_check_interval, ResetByteBuf);
 		}
 		UniqueByteBuf AllocBuffer() {
 			return pool_->GetUniqueObject(buffer_size_);

@@ -19,12 +19,12 @@ namespace bcore_basio {
 
 		tcp::socket& Socket() { return socket_; }
 		void Start() { DoRead(); }
-		void WriteBuffer(bcore::SharedByteBuf buf) {
+		void WriteBuffer(bcore::UniqueByteBuf buf) {
 			bool can_write = false;
 			{
 				std::lock_guard<std::mutex> lock(write_buffer_mutex_);
-				write_buffer_list_.push(std::move(buf));
-				if (write_flag_.load()) {
+				write_buffer_list_.emplace(std::move(buf));
+				if (!write_flag_) {
 					write_flag_ = true;
 					can_write = true;
 					std::swap(writing_buffer_list_, write_buffer_list_);
@@ -44,8 +44,8 @@ namespace bcore_basio {
 		std::array<char, 8192> buffer_;
 
 		std::mutex write_buffer_mutex_;
-		std::queue<bcore::SharedByteBuf> writing_buffer_list_;
-		std::queue<bcore::SharedByteBuf> write_buffer_list_;
+		std::queue<bcore::UniqueByteBuf> writing_buffer_list_;
+		std::queue<bcore::UniqueByteBuf> write_buffer_list_;
 		std::atomic_bool write_flag_;
 	};
 }

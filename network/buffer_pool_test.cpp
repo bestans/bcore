@@ -18,7 +18,7 @@ public:
 		free_size += size_;
 	}
 	uint32_t size_;
-	uint32_t GetSize() const {
+	uint32_t Cap() const {
 		return size_;
 	}
 };

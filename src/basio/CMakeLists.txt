@@ -12,4 +12,4 @@ include_directories(
 )
 message(${ROOT_INCLUDE}/basio)
 message(${CMAKE_CURRENT_SOURCE_DIR})
-# target_link_libraries(bcore_asio  ${G_TEST_LIB})
+target_link_libraries(bcore_asio  ${BCORE_LIB})

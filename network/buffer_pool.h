@@ -138,11 +138,11 @@ public:
 		return std::move(std::make_unique<T>(min_size));
 	}
 	void RecycleBuffer(std::unique_ptr<T> buffer) {
-		if (buffer->GetSize() < min_buffer_size_) {
+		if (buffer->Cap() < min_buffer_size_) {
 			return;
 		}
 		bool has_left = false;
-		auto index = Log2Int(buffer->GetSize(), has_left);
+		auto index = Log2Int(buffer->Cap(), has_left);
 		if (has_left) index++;
 		if (index > min_index_ && index <= max_index_) {
 			return buffer_pool_[index-1 - min_index_].RecycleBuffer(std::move(buffer));

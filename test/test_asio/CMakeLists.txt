@@ -9,4 +9,4 @@ include_directories(
 # 将源代码添加到此项目的可执行文件。
 add_executable (test_asio ${TEST_ASIO_SRC_LIST})
 
-target_link_libraries(test_asio ${G_TEST_LIB})
+target_link_libraries(test_asio ${G_TEST_LIB} ${BCORE_LIB})

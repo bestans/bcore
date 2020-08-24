@@ -53,22 +53,22 @@ TEST(buffer_pool, test_size) {
 		for (auto size : test_size) {
 			auto temp = BufferPool::AllocBuffer(size);
 			auto temp_shared = BufferPool::AllocSharedBuffer(size);
-			EXPECT_EQ(temp->GetSize(), temp_shared->GetSize());
-			EXPECT_GE(temp->GetSize(), (uint32_t)size);
+			EXPECT_EQ(temp->Cap(), temp_shared->Cap());
+			EXPECT_GE(temp->Cap(), (uint32_t)size);
 		}
 		auto ptr = BufferPool::AllocBuffer(normal_size);
 		auto ptr2 = BufferPool::AllocSharedBuffer(normal_size);
-		EXPECT_EQ(ptr->GetSize(), ptr2->GetSize()) << "unique size != shared size";
+		EXPECT_EQ(ptr->Cap(), ptr2->Cap()) << "unique size != shared size";
 		if (normal_size <= 5 || normal_size >= max_size) {
-			EXPECT_EQ(ptr->GetSize(), normal_size) << "not in range size error";
+			EXPECT_EQ(ptr->Cap(), normal_size) << "not in range size error";
 			continue;
 		}
 		auto normal_ptr = BufferPool::AllocBuffer(normal_size);
 		auto last_ptr = BufferPool::AllocBuffer(normal_size - 1);
 		auto next_ptr = BufferPool::AllocBuffer(normal_size + 1);
 
-		EXPECT_GE(normal_ptr->GetSize(), (uint32_t)normal_size);
-		EXPECT_LE(last_ptr->GetSize(), (uint32_t)normal_size);
-		EXPECT_EQ(next_ptr->GetSize(), (uint32_t)2 * (uint32_t)normal_size);
+		EXPECT_GE(normal_ptr->Cap(), (uint32_t)normal_size);
+		EXPECT_LE(last_ptr->Cap(), (uint32_t)normal_size);
+		EXPECT_EQ(next_ptr->Cap(), (uint32_t)2 * (uint32_t)normal_size);
 	}
 }

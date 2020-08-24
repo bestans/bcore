@@ -37,7 +37,7 @@ int main1(int argc, char* argv[]) {
 int main(int argc, char* argv[]) {
 	std::cout << "test tcp server\n";
 	auto pool = std::make_shared<bcore_basio::ThreadPool>(3);
-	TcpServer s(pool->AllocContext(10), std::atoi(argv[1]));
+	TcpServer s(pool->AllocContext(10), std::atoi("1111"));
 	pool->Wait();
 	return 0;
 }
