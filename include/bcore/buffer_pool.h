@@ -79,6 +79,40 @@ namespace bcore {
 		uint32_t len_;
 		char* buffer_;
 	};
+	class Slice {
+	public:
+		Slice(uint32_t cap) : cap_(cap), len_(0) {
+			data_ = new char[cap_];
+		}
+		~Slice() {
+			cap_ = 0;
+			len_ = 0;
+			delete[] data_;
+			data_ = nullptr;
+		}
+		uint32_t cap() {
+			return cap_;
+		}
+		uint32_t len() {
+			return len_;
+		}
+		void append(char c) {
+			if (len_ < cap_) {
+				data_[len_++] = c;
+			}
+		}
+		void reset_len(uint32_t new_len) {
+			len_ = new_len > cap_ ? cap_ : new_len;
+		}
+		char get(uint32_t index) {
+			return data_[index];
+		}
+	private:
+		uint32_t cap_;
+		uint32_t len_;
+		char* data_;
+	};
+	using SliceSharedPtr = std::shared_ptr<Slice>;
 	static void ResetByteBuf(ByteBuf* buf) {
 		buf->ResetLen();
 	}
@@ -92,6 +126,7 @@ namespace bcore {
 			
 		}
 	};
+
 
 	class SectionBuffer {
 	public:

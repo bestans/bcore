@@ -31,6 +31,7 @@ namespace bcore_basio {
 			}
 			if (!writing_buffer_list_.empty()) {
 				DoWrite();
+				
 				return;
 			}
 			bool write_continue = false;
