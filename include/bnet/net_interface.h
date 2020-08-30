@@ -1,4 +1,5 @@
 #pragma once
+#include "bcore/buffer_pool.h"
 
 namespace bnet {
 	class ISession {
@@ -12,6 +13,9 @@ namespace bnet {
 		void ProtocolSize(IMessage* message, int& totalSize){}
 	}
 	
+	class IMessageHandler {
+
+	};
 	class MessageData {
 
 	};
@@ -35,6 +39,6 @@ namespace bnet {
 	class IFrameProcess {
 	public:
 		virtual ~IFrameProcess() {}
-		DataBufferType TryDecodeFrame(DataBufferType data, int& readLen, bool& success, std::string& err);
+		virtual bool TryDecodeFrame(bcore::Slice& slice, ErrorCode& err, uint32_t& read_len, bcore::Slice& message_data) = 0;
 	};
 }

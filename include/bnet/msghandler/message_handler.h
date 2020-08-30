@@ -1,6 +1,7 @@
 #pragma once
 #include "basio/tcp_session.h"
 #include "bnet/net_interface.h"
+#include "bcore/buffer_pool.h"
 
 namespace bnet {
 	class IMessageHandler {

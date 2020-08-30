@@ -7,8 +7,9 @@ namespace bcore_basio {
 	{
 		auto self = shared_from_this();
 		socket_.async_read_some(
-			asio::buffer(buffer_, buffer_.size()), [this, self](asio::error_code ec, std::size_t bytes_transferred)
+			asio::buffer(read_buffer_->writable_data(), read_buffer_->writable_bytes()), [this, self](asio::error_code ec, std::size_t bytes_transferred)
 			{
+				read_buffer_->add_write_index(bytes_transferred);
 				auto buf = BufferPool::AllocBuffer(5);
 				buf->WriteBuffer(buffer_.data(), bytes_transferred);
 				WriteBuffer(std::move(buf));
@@ -20,8 +21,8 @@ namespace bcore_basio {
 		auto buf = std::move(writing_buffer_list_.front());
 		writing_buffer_list_.pop();
 		auto self = shared_from_this();
-		auto data = buf->Data();
-		auto len = buf->Len();
+		auto data = buf->data();
+		auto len = buf->len();
 		asio::async_write(
 			socket_, asio::buffer(data, len),
 			[this, self, hold = std::move(buf)](asio::error_code ec, std::size_t /* bytes_transferred */) {

@@ -51,13 +51,13 @@ namespace bcore {
 			}
 #endif
 		}
-		char* Data() {
+		char* data() {
 			return buffer_;
 		}
-		uint32_t Cap() {
+		uint32_t cap() {
 			return cap_;
 		}
-		uint32_t Len() {
+		uint32_t len() {
 			return len_;
 		}
 		void WriteBuffer(void *ptr, uint32_t size) {
@@ -81,15 +81,8 @@ namespace bcore {
 	};
 	class Slice {
 	public:
-		Slice(uint32_t cap) : cap_(cap), len_(0) {
-			data_ = new char[cap_];
-		}
-		~Slice() {
-			cap_ = 0;
-			len_ = 0;
-			delete[] data_;
-			data_ = nullptr;
-		}
+		Slice(char* data, uint32_t cap_size) : data_(data), cap_(cap_size), len_(0) {}
+
 		uint32_t cap() {
 			return cap_;
 		}
@@ -107,10 +100,21 @@ namespace bcore {
 		char get(uint32_t index) {
 			return data_[index];
 		}
+		Slice make_slice(uint32_t start_index, uint32_t end_index) {
+			if (start_index > len_) {
+				start_index = len_;
+			}
+			if (end_index < start_index) {
+				end_index = len_;
+			} else if (end_index < start_index) {
+				end_index = start_index;
+			}
+			return Slice(data_ + start_index, end_index - end_index);
+		}
 	private:
+		char* data_;
 		uint32_t cap_;
 		uint32_t len_;
-		char* data_;
 	};
 	using SliceSharedPtr = std::shared_ptr<Slice>;
 	static void ResetByteBuf(ByteBuf* buf) {

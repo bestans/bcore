@@ -4,6 +4,7 @@
 #include <atomic>
 #include "thread_pool.h"
 #include "bcore/buffer_pool.h"
+#include "bnet/socket_buffer.h"
 
 using asio::ip::tcp;
 namespace bcore_basio {
@@ -44,8 +45,12 @@ namespace bcore_basio {
 		std::array<char, 8192> buffer_;
 
 		std::mutex write_buffer_mutex_;
+		
 		std::queue<bcore::UniqueByteBuf> writing_buffer_list_;
 		std::queue<bcore::UniqueByteBuf> write_buffer_list_;
 		std::atomic_bool write_flag_;
+
+		bnet::SocketBufferUniquePtr read_buffer_;
+		bnet::SocketBufferUniquePtr read_decode_buffer_;
 	};
 }
