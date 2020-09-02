@@ -11,8 +11,8 @@ namespace bcore_basio {
 			{
 				read_buffer_->add_write_index(bytes_transferred);
 				auto buf = BufferPool::AllocBuffer(5);
-				buf->WriteBuffer(buffer_.data(), bytes_transferred);
-				WriteBuffer(std::move(buf));
+				buf->write_buffer(buffer_.data(), bytes_transferred);
+				write_buffer(std::move(buf));
 				DoRead();
 			});
 	}

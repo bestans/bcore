@@ -18,7 +18,22 @@ namespace bnet {
 			if (slice.len() < read_len) {
 				return false;
 			}
+			message_data.make_slice(len_len, read_len);
 			return true;
 		}
+
+		virtual void EncodeFrame(uint32_t msg_len, bcore::Slice& buf, ErrorCode& err) override
+		{
+			if (!ShareCoder::EncodeVarint(buf, msg_len)) {
+				err = ERROR_CODE.kEncodeVarintBufNotEnough;
+			}
+		}
+
+
+		virtual uint32_t EncodeFrameLenSize(uint32_t msg_len) override
+		{
+			return ShareCoder::EncodeVarintSize(msg_len);
+		}
+
 	};
 }

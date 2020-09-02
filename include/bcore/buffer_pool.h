@@ -21,6 +21,71 @@ namespace bcore {
 		return n;
 	}
 
+	class Slice {
+	public:
+		Slice() {}
+		Slice(char* data_arg, uint32_t cap_size) : data_(data_arg), cap_(cap_size), len_(0) {}
+		char* data() {
+			return data_;
+		}
+		uint32_t cap() {
+			return cap_;
+		}
+
+		explicit operator bool() const noexcept {
+			return cap_ > 0;
+		}
+		uint32_t len() {
+			return len_;
+		}
+		bool append(const char* str, uint32_t size) {
+			if (size <= cap_ && len_ <= cap_ - size) {
+				memcpy(data_ + len_, str, size);
+				return true;
+			}
+			return false;
+		}
+		bool append(char c) {
+			if (len_ < cap_) {
+				data_[len_++] = c;
+				return true;
+			}
+			return false;
+		}
+		void reset_len(uint32_t new_len) {
+			len_ = new_len > cap_ ? cap_ : new_len;
+		}
+		void reset_data(char* data_arg, uint32_t len_arg) {
+			data_ = data_arg;
+			len_ = len_arg;
+			cap_ = len_;
+		}
+		char get(uint32_t index) {
+			return data_[index];
+		}
+		void write_buffer(void* ptr, uint32_t size) {
+			auto real_size = std::min(size, cap_ - len_);
+			memcpy(data_ + len_, ptr, real_size);
+			len_ += real_size;
+		}
+		Slice make_slice(uint32_t start_index, uint32_t end_index) {
+			if (start_index > len_) {
+				start_index = len_;
+			}
+			if (end_index < start_index) {
+				end_index = len_;
+			}
+			else if (end_index < start_index) {
+				end_index = start_index;
+			}
+			
+			return Slice(data_ + start_index, end_index - end_index);
+		}
+	protected:
+		char* data_;
+		uint32_t cap_;
+		uint32_t len_;
+	};
 	//128M 64M 32M 16M 8M 4M 2M 1M 512K 256K 128K 64K
 	//
 #ifdef BTEST
@@ -31,10 +96,9 @@ namespace bcore {
 		ByteBufAlloc = f;
 	}
 #endif
-	class ByteBuf {
+	class ByteBuf : public Slice {
 	public:
-		ByteBuf(uint32_t cap) : cap_(cap), len_(0) {
-			buffer_ = new char[cap];
+		ByteBuf(uint32_t cap_arg) : Slice(new char[cap_arg], cap_arg) {
 #ifdef BTEST
 			if (ByteBufAlloc != nullptr) {
 				ByteBufAlloc(this, true);
@@ -43,82 +107,22 @@ namespace bcore {
 		}
 		~ByteBuf() {
 			cap_ = 0;
-			delete[] buffer_;
-			buffer_ = nullptr;
+			delete[] data_;
+			data_ = nullptr;
 #ifdef BTEST
 			if (ByteBufAlloc != nullptr) {
 				ByteBufAlloc(this, false);
 			}
 #endif
 		}
-		char* data() {
-			return buffer_;
+		void reset_data(char* data_arg, uint32_t len_arg) = delete;
+		Slice to_slice() {
+			return Slice(data_, cap_);
 		}
-		uint32_t cap() {
-			return cap_;
-		}
-		uint32_t len() {
-			return len_;
-		}
-		void WriteBuffer(void *ptr, uint32_t size) {
-			auto real_size = std::min(size, cap_ - len_);
-			memcpy(buffer_ + len_, ptr, real_size);
-			len_ += real_size;
-		}
-		inline void AddLen(uint32_t add) {
-			len_ += add;
-			if (len_ > cap_) {
-				len_ = cap_;
-			}
-		}
-		inline void ResetLen() {
-			len_ = 0;
-		}
-	private:
-		uint32_t cap_;
-		uint32_t len_;
-		char* buffer_;
-	};
-	class Slice {
-	public:
-		Slice(char* data, uint32_t cap_size) : data_(data), cap_(cap_size), len_(0) {}
-
-		uint32_t cap() {
-			return cap_;
-		}
-		uint32_t len() {
-			return len_;
-		}
-		void append(char c) {
-			if (len_ < cap_) {
-				data_[len_++] = c;
-			}
-		}
-		void reset_len(uint32_t new_len) {
-			len_ = new_len > cap_ ? cap_ : new_len;
-		}
-		char get(uint32_t index) {
-			return data_[index];
-		}
-		Slice make_slice(uint32_t start_index, uint32_t end_index) {
-			if (start_index > len_) {
-				start_index = len_;
-			}
-			if (end_index < start_index) {
-				end_index = len_;
-			} else if (end_index < start_index) {
-				end_index = start_index;
-			}
-			return Slice(data_ + start_index, end_index - end_index);
-		}
-	private:
-		char* data_;
-		uint32_t cap_;
-		uint32_t len_;
 	};
 	using SliceSharedPtr = std::shared_ptr<Slice>;
 	static void ResetByteBuf(ByteBuf* buf) {
-		buf->ResetLen();
+		buf->reset_len(0);
 	}
 	using DeleterType = std::function<void(ByteBuf*)>;
 	using UniqueByteBuf = std::unique_ptr<ByteBuf, DeleterType>;

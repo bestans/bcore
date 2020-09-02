@@ -5,15 +5,16 @@ namespace bnet {
 	class ShareCoder {
 		static const uint64_t EncodeVarintCompare = 0x7F;
 	public:
-		static void EncodeVarint(Slice& slice, uint64_t x) {
+		static bool EncodeVarint(Slice& slice, uint64_t x) {
 			while (true) {
 				if (x > EncodeVarintCompare) {
-					slice.append((char)(x & 0x7F | 0x80));
+					if (!slice.append((char)(x & 0x7F | 0x80))) {
+						return false;
+					}
 					x >>= 7;
 				}
 				else {
-					slice.append((char)(x & 0x7F));
-					return;
+					return slice.append((char)(x & 0x7F));
 				}
 			}
 		}

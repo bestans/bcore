@@ -7,6 +7,9 @@ namespace bnet {
 		kSuccess = 0,
 		kFailed,
 		kDecodeVarint,
+		kEncodeVarintBufNotEnough,
+		kProtocolEncodeBufNotEnough,
+		kDecodeMessageFailed,
 	};
 	const char* error_msg[] = {
 		"kSuccess",
@@ -62,6 +65,10 @@ namespace bnet {
 				return err_code_.message();
 			}
 			return err_code_.message() + ",extra=" + extra_msg_;
+		}
+		ErrorCode& operator=(ERROR_CODE code) noexcept {
+			*this = ErrorCode(code);
+			return *this;
 		}
 		explicit operator bool() const noexcept {
 			return err_code_.value() != 0;

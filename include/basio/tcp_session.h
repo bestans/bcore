@@ -5,6 +5,7 @@
 #include "thread_pool.h"
 #include "bcore/buffer_pool.h"
 #include "bnet/socket_buffer.h"
+#include "bnet/msghandler/message_handler.h"
 
 using asio::ip::tcp;
 namespace bcore_basio {
