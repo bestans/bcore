@@ -52,6 +52,12 @@ namespace bcore {
 			}
 			return false;
 		}
+		void add_len(uint32_t add) {
+			len_ += add;
+			if (len_ > cap_) {
+				len_ = cap_;
+			}
+		}
 		void reset_len(uint32_t new_len) {
 			len_ = new_len > cap_ ? cap_ : new_len;
 		}
@@ -67,6 +73,9 @@ namespace bcore {
 			auto real_size = std::min(size, cap_ - len_);
 			memcpy(data_ + len_, ptr, real_size);
 			len_ += real_size;
+		}
+		inline Slice to_slice() {
+			return Slice(data_, len_);
 		}
 		Slice make_slice(uint32_t start_index, uint32_t end_index) {
 			if (start_index > len_) {

@@ -9,7 +9,7 @@
 
 using asio::ip::tcp;
 namespace bcore_basio {
-	class TcpSession : public std::enable_shared_from_this<TcpSession>
+	class TcpSession : public std::enable_shared_from_this<TcpSession>, public bnet::ISession
 	{
 	public:
 		TcpSession(std::shared_ptr<ThreadPoolContext> threadCtx) :
@@ -52,6 +52,7 @@ namespace bcore_basio {
 		std::atomic_bool write_flag_;
 
 		bnet::SocketBufferUniquePtr read_buffer_;
-		bnet::SocketBufferUniquePtr read_decode_buffer_;
+		bnet::SocketBufferUniquePtr read_buffer_bak;
+		std::shared_ptr<bnet::IMessageHandler> message_handler_;
 	};
 }

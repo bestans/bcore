@@ -35,6 +35,15 @@ namespace bnet {
 		uint32_t writable_bytes() {
 			return cap() - write_index_;
 		}
+		void reset() {
+			write_index_ = 0;
+			read_index_ = 0;
+		}
+		void write_bytes(char* data, uint32_t size) {
+			auto write_len = std::min(size, writable_bytes());
+			memcpy(writable_data(), data, write_len);
+			write_index_ += write_len;
+		}
 	private:
 		bcore::UniqueByteBuf buffer_;
 		uint32_t write_index_;

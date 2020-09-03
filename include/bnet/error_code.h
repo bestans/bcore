@@ -11,12 +11,6 @@ namespace bnet {
 		kProtocolEncodeBufNotEnough,
 		kDecodeMessageFailed,
 	};
-	const char* error_msg[] = {
-		"kSuccess",
-		"kFailed",
-	};
-	const int kErrorMsgSize = sizeof(error_msg) / sizeof(char*);
-	const char* kUndefinedErrorMsg = "undefined error msg.";
 
 	class ErrorCategory : public std::error_category
 	{
@@ -25,6 +19,13 @@ namespace bnet {
 
 		std::string message(int c) const override
 		{
+			static const char* error_msg[] = {
+				"kSuccess",
+				"kFailed",
+			};
+			static const int kErrorMsgSize = sizeof(error_msg) / sizeof(char*);
+			static const char* kUndefinedErrorMsg = "undefined error msg.";
+
 			if (c >= 0 && c < kErrorMsgSize) {
 				return error_msg[c];
 			}
@@ -53,6 +54,7 @@ namespace std {
 namespace bnet {
 	class ErrorCode {
 	public:
+		ErrorCode() : ErrorCode(ERROR_CODE::kSuccess) {}
 		ErrorCode(ERROR_CODE code) : err_code_(code) { }
 		ErrorCode(ERROR_CODE code, const char* str) : err_code_(code), extra_msg_(str) { }
 		ErrorCode(ERROR_CODE code, std::string str) : err_code_(code), extra_msg_(std::move(str)) { }

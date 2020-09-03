@@ -22,5 +22,5 @@ TEST(bnet, share_coder) {
 TEST(bnet, share_coder2) {
 	bnet::ErrorCode e((bnet::ERROR_CODE)1);
 	bnet::ErrorCode e2((bnet::ERROR_CODE)1, "asdfasdfasfd");
-	std::cout << e.message() << "," << kErrorMsgSize << "," << !e << "," << (e == e2) << (e != e2) << "," << e2.message() << std::endl;
+	std::cout << e.message() << "," << !e << "," << (e == e2) << (e != e2) << "," << e2.message() << std::endl;
 }

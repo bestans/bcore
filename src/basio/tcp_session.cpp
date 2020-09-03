@@ -9,10 +9,33 @@ namespace bcore_basio {
 		socket_.async_read_some(
 			asio::buffer(read_buffer_->writable_data(), read_buffer_->writable_bytes()), [this, self](asio::error_code ec, std::size_t bytes_transferred)
 			{
+				if (!ec) {
+					return;
+				}
 				read_buffer_->add_write_index(bytes_transferred);
-				auto buf = BufferPool::AllocBuffer(5);
-				buf->write_buffer(buffer_.data(), bytes_transferred);
-				write_buffer(std::move(buf));
+				bnet::ErrorCode err;
+				bcore::Slice readable;
+				while (true) {
+					readable.reset_data(read_buffer_->readable_data(), read_buffer_->readable_bytes());
+					auto read_len = message_handler_->DecodeMessage(this, readable, err);
+					if (!err) {
+						return;
+					}
+					if (read_len <= 0) {
+						break;
+					}
+					read_buffer_->add_read_index(read_len);
+				}
+				if (read_buffer_->readable_bytes() <= 0) {
+					read_buffer_->reset();
+				}
+				if (read_buffer_->readable_bytes() > 0) {
+					read_buffer_bak->write_bytes(read_buffer_->readable_data(), read_buffer_->readable_bytes());
+					read_buffer_->reset();
+				}
+				else {
+					read_buffer_.swap(read_buffer_bak);
+				}
 				DoRead();
 			});
 	}

@@ -16,7 +16,7 @@ namespace bnet {
 				return 0;
 			}
 			if (!message_data) {
-				err = ERROR_CODE.kDecodeMessageFailed;
+				err = ERROR_CODE::kDecodeMessageFailed;
 				return 0;
 			}
 			int msg_type = 0;
@@ -25,7 +25,7 @@ namespace bnet {
 		}
 		void EncodeMessage(ISession* ses, void* message, ErrorCode& err) {
 			int msg_type = 0;
-			auto msg_size = proto_coder_->ProtocolSize(message, msg_type, err);
+			uint32_t msg_size = proto_coder_->ProtocolSize(message, msg_type, err);
 			if (!err) {
 				return;
 			}

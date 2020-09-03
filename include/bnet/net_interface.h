@@ -29,8 +29,8 @@ namespace bnet {
 
 	class IProtoCoder {
 	public:
-		virtual uint32_t ProtocolSize(IMessage* message, int& msg_type, ErrorCode& err) {}
-		virtual void ProtocolEncode(IMessage* message, bcore::Slice& buf, int msg_type, ErrorCode& err);
+		virtual uint32_t ProtocolSize(void* message, int& msg_type, ErrorCode& err) {}
+		virtual void ProtocolEncode(void* message, bcore::Slice& buf, int msg_type, ErrorCode& err);
 		virtual std::shared_ptr<IMessage> ProtocolDecode(bcore::Slice& buf, ErrorCode& err, int& msg_type);
 	};
 	struct ProtoCoderParam {
