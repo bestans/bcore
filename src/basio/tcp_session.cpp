@@ -7,16 +7,16 @@ namespace bcore_basio {
 	{
 		auto self = shared_from_this();
 		socket_.async_read_some(
-			asio::buffer(read_buffer_->writable_data(), read_buffer_->writable_bytes()), [this, self](asio::error_code ec, std::size_t bytes_transferred)
+			asio::buffer(read_buffer_->writable_data(), read_buffer_->writable_size()), [this, self](asio::error_code ec, std::size_t bytes_transferred)
 			{
 				if (!ec) {
 					return;
 				}
-				read_buffer_->add_write_index(bytes_transferred);
+				read_buffer_->add_len(bytes_transferred);
 				bnet::ErrorCode err;
 				bcore::Slice readable;
 				while (true) {
-					readable.reset_data(read_buffer_->readable_data(), read_buffer_->readable_bytes());
+					readable.reset_data(read_buffer_->readable_data(), read_buffer_->readable_size());
 					auto read_len = message_handler_->DecodeMessage(this, readable, err);
 					if (!err) {
 						return;
@@ -26,11 +26,18 @@ namespace bcore_basio {
 					}
 					read_buffer_->add_read_index(read_len);
 				}
-				if (read_buffer_->readable_bytes() <= 0) {
+				if (read_buffer_->readable_size() <= 0) {
 					read_buffer_->reset();
 				}
-				if (read_buffer_->readable_bytes() > 0) {
-					read_buffer_bak->write_bytes(read_buffer_->readable_data(), read_buffer_->readable_bytes());
+				if (read_buffer_->readable_size() > 0) {
+					if (read_buffer_->readable_size() >= read_buffer_->cap()) {
+						//buffer已经满了，解析部分数据
+						readable.reset_data(read_buffer_->readable_data(), read_buffer_->readable_size());
+						auto msg_info = message_handler_->DecodePartMessage(this, readable, err);
+						//close session
+						return;
+					}
+					read_buffer_bak->write_buffer(read_buffer_->readable_data(), read_buffer_->readable_size());
 					read_buffer_->reset();
 				}
 				else {

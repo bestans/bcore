@@ -18,6 +18,7 @@ namespace bnet {
 	public:
 		virtual ~IMessageHandler() {}
 		virtual uint32_t DecodeMessage(ISession* ses, bcore::Slice slice, ErrorCode& err);
+		virtual std::string DecodePartMessage(ISession* ses, bcore::Slice slice, ErrorCode& err);
 		virtual void EncodeMessage(ISession* ses, void* message, ErrorCode& err);
 	};
 	class MessageData {
@@ -31,7 +32,7 @@ namespace bnet {
 	public:
 		virtual uint32_t ProtocolSize(void* message, int& msg_type, ErrorCode& err) {}
 		virtual void ProtocolEncode(void* message, bcore::Slice& buf, int msg_type, ErrorCode& err);
-		virtual std::shared_ptr<IMessage> ProtocolDecode(bcore::Slice& buf, ErrorCode& err, int& msg_type);
+		virtual void* ProtocolDecode(bcore::Slice& buf, ErrorCode& err, int& msg_type, bool is_part);
 	};
 	struct ProtoCoderParam {
 		int msgType = 0;
@@ -43,7 +44,7 @@ namespace bnet {
 	class IFrameProcess {
 	public:
 		virtual ~IFrameProcess() {}
-		virtual bool TryDecodeFrame(bcore::Slice& slice, ErrorCode& err, uint32_t& read_len, bcore::Slice& message_data) = 0;
+		virtual bool TryDecodeFrame(bcore::Slice& slice, ErrorCode& err, uint32_t& read_len, bcore::Slice& message_data, bool is_part) = 0;
 		virtual void EncodeFrame(uint32_t msg_len, bcore::Slice& buf, ErrorCode& err) = 0;
 		virtual uint32_t EncodeFrameLenSize(uint32_t msg_len) = 0;
 	};

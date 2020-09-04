@@ -4,21 +4,22 @@
 namespace bnet {
 	class StringCoder : public IProtoCoder {
 	public:
-		virtual void* ProtocolSize(IMessage* message, int& totalSize) override
+		virtual void* ProtocolSize(void* message, int& totalSize) override
 		{
 			
 		}
 
-
-		virtual MessageData* ProtocolEncode(IMessage* message, buf[]byte, void* param) override
+		void ProtocolEncode(void* message, bcore::Slice& buf, int msg_type, ErrorCode& err) override
 		{
-			throw std::logic_error("The method or operation is not implemented.");
+			return
 		}
 
-
-		virtual IMessage* ProtocolDecode(MessageData* data) override
+		void* ProtocolDecode(bcore::Slice& buf, ErrorCode& err, int& msg_type, bool is_part) override
 		{
-			throw std::logic_error("The method or operation is not implemented.");
+			if (is_part) {
+				return nullptr;
+			}
+			return new std::string(buf.data(), buf.len());
 		}
 	};
 }

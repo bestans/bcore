@@ -28,6 +28,12 @@ namespace bcore {
 		char* data() {
 			return data_;
 		}
+		inline char* writable_data() {
+			return data_ + len_;
+		}
+		inline uint32_t writable_size() {
+			return cap_ - len_;
+		}
 		uint32_t cap() {
 			return cap_;
 		}
@@ -69,7 +75,7 @@ namespace bcore {
 		char get(uint32_t index) {
 			return data_[index];
 		}
-		void write_buffer(void* ptr, uint32_t size) {
+		void write_buffer(char* ptr, uint32_t size) {
 			auto real_size = std::min(size, cap_ - len_);
 			memcpy(data_ + len_, ptr, real_size);
 			len_ += real_size;
