@@ -10,6 +10,10 @@ namespace bnet {
 	
 	class MessageHandler : public IMessageHandler {
 	public:
+		static std::shared_ptr<MessageHandler> Instance() {
+			static std::shared_ptr<MessageHandler> g_instance = std::make_shared<MessageHandler>();
+			return g_instance;
+		}
 		uint32_t DecodeMessage(ISession* ses, bcore::Slice slice, ErrorCode& err) {
 			uint32_t read_len = 0;
 			bcore::Slice message_data;
