@@ -15,7 +15,6 @@ namespace bcore_basio {
 		TcpSession(std::shared_ptr<ThreadPoolContext> threadCtx) :
 			thread_context_(threadCtx),
 			socket_(*(thread_context_->ctx)),
-			strand_(*(thread_context_->ctx)),
 			buffer_()
 		{ }
 
@@ -42,7 +41,6 @@ namespace bcore_basio {
 	private:
 		std::shared_ptr<ThreadPoolContext> thread_context_;
 		tcp::socket socket_;
-		asio::io_context::strand strand_;
 		std::array<char, 8192> buffer_;
 
 		std::mutex write_buffer_mutex_;

@@ -1,11 +1,12 @@
 #pragma once
 #include "bcore/buffer_pool.h"
 #include "error_code.h"
+#include <functional>
 
 namespace bnet {
 	class ISession {
-	private:
-		virtual ~ISession() = 0;
+	public:
+		virtual ~ISession() {};
 		
 	};
 	class IMessage {
@@ -13,13 +14,16 @@ namespace bnet {
 		virtual ~IMessage() {}
 		void ProtocolSize(IMessage* message, int& totalSize) {}
 	};
-	
+
+	using ReceiveMessageFunc = std::function<void(void*)>;
 	class IMessageHandler {
 	public:
 		virtual ~IMessageHandler() {}
 		virtual uint32_t DecodeMessage(ISession* ses, bcore::Slice slice, ErrorCode& err);
 		virtual std::string DecodePartMessage(ISession* ses, bcore::Slice slice, ErrorCode& err);
 		virtual void EncodeMessage(ISession* ses, void* message, ErrorCode& err);
+		virtual void SetReceiveMessageFunc(ReceiveMessageFunc func) = 0;
+		virtual void Init() {}
 	};
 	class MessageData {
 
@@ -30,9 +34,12 @@ namespace bnet {
 
 	class IProtoCoder {
 	public:
-		virtual uint32_t ProtocolSize(void* message, int& msg_type, ErrorCode& err) {}
-		virtual void ProtocolEncode(void* message, bcore::Slice& buf, int msg_type, ErrorCode& err);
-		virtual void* ProtocolDecode(bcore::Slice& buf, ErrorCode& err, int& msg_type, bool is_part);
+		virtual uint32_t ProtocolSize(void* message, int& msg_type, ErrorCode& err) = 0;
+		virtual void ProtocolEncode(void* message, bcore::Slice& buf, int msg_type, ErrorCode& err) = 0;
+		virtual void* ProtocolDecode(bcore::Slice& buf, ErrorCode& err, int& msg_type, bool is_part) = 0;
+		virtual void ReceiveMessage(void* message) = 0;
+	protected:
+		ReceiveMessageFunc receive_func_;
 	};
 	struct ProtoCoderParam {
 		int msgType = 0;

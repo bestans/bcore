@@ -10,6 +10,7 @@ namespace bnet {
 		kEncodeVarintBufNotEnough,
 		kProtocolEncodeBufNotEnough,
 		kDecodeMessageFailed,
+		kConnectFailed,
 	};
 
 	class ErrorCategory : public std::error_category
@@ -57,7 +58,7 @@ namespace bnet {
 		ErrorCode() : ErrorCode(ERROR_CODE::kSuccess) {}
 		ErrorCode(ERROR_CODE code) : err_code_(code) { }
 		ErrorCode(ERROR_CODE code, const char* str) : err_code_(code), extra_msg_(str) { }
-		ErrorCode(ERROR_CODE code, std::string str) : err_code_(code), extra_msg_(std::move(str)) { }
+		ErrorCode(ERROR_CODE code, const std::string& str) : err_code_(code), extra_msg_(str) { }
 		
 		ERROR_CODE value() const {
 			return (ERROR_CODE)err_code_.value();

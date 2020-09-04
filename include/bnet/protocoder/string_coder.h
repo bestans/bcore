@@ -4,6 +4,7 @@
 namespace bnet {
 	class StringCoder : public IProtoCoder {
 	public:
+		StringCoder() : IProtoCoder(std::bind(&StringCoder::ReceiveMessage, this)) {}
 		virtual void* ProtocolSize(void* message, int& totalSize) override
 		{
 			
@@ -20,6 +21,10 @@ namespace bnet {
 				return nullptr;
 			}
 			return new std::string(buf.data(), buf.len());
+		}
+		void ReceiveMessage(void* message) {
+			auto str = static_cast<*std::string>(message);
+			delete str;
 		}
 	};
 }

@@ -3,6 +3,9 @@
 #include "bcore/buffer_pool.h"
 
 namespace bnet {
+	struct XxOption {
+		uint32_t aa;
+	};
 	class SocketBuffer {
 	public:
 		SocketBuffer(uint32_t size) : read_index_(0) {

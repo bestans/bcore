@@ -11,7 +11,7 @@ namespace bnet {
 			uint32_t len_len = 0;
 			uint64_t msg_len = 0;
 			if !ShareCoder::DecodeVarint(slice, len_len, msg_len) {
-				err = ERROR_CODE.kDecodeVarint;
+				err = ERROR_CODE::kDecodeVarint;
 				return false;
 			}
 			auto read_len = msg_len + len_len;
@@ -28,7 +28,7 @@ namespace bnet {
 		virtual void EncodeFrame(uint32_t msg_len, bcore::Slice& buf, ErrorCode& err) override
 		{
 			if (!ShareCoder::EncodeVarint(buf, msg_len)) {
-				err = ERROR_CODE.kEncodeVarintBufNotEnough;
+				err = ERROR_CODE::kEncodeVarintBufNotEnough;
 			}
 		}
 

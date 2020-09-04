@@ -3,10 +3,10 @@
 #include "bnet/net_interface.h"
 #include <memory>
 #include <functional>
-#include <sstring>
+#include "bnet/msghandler/proto_coder.h"
+#include "bnet/msghandler/frame_process.h"
 
 namespace bnet {
-	using ReceiveMessageFunc = std::function<void(void*)>;
 	
 	class MessageHandler : public IMessageHandler {
 	public:
@@ -24,7 +24,8 @@ namespace bnet {
 				return 0;
 			}
 			int msg_type = 0;
-			auto msg = proto_coder_->ProtocolDecode(message_data, err, msg_type);
+			auto msg = proto_coder_->ProtocolDecode(message_data, err, msg_type, false);
+			receive_func_(msg);
 			return read_len;
 		}
 		std::string DecodePartMessage(ISession* ses, bcore::Slice slice, ErrorCode& err) override {
@@ -62,6 +63,22 @@ namespace bnet {
 				return;
 			}
 			buffer->add_len(slice.len());
+		}
+		void Init() override {
+			if (!proto_coder_) {
+				proto_coder_ = std::make_shared<StringCoder>();
+			}
+			if (!frame_) {
+				frame_ = std::make_shared<LengthFrameBuilder>();
+			}
+			if (!receive_func_) {
+				receive_func_ = [&](void* message) {
+					proto_coder_->ReceiveMessage(message);
+				};
+			}
+		}
+		void SetReceiveMessageFunc(ReceiveMessageFunc func) override {
+			receive_func_ = func;
 		}
 	private:
 		std::shared_ptr<IProtoCoder> proto_coder_;

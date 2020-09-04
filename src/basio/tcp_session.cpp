@@ -12,6 +12,7 @@ namespace bcore_basio {
 				if (!ec) {
 					return;
 				}
+				//socket_.shutdown(asio::socket_base::shutdown_both);
 				read_buffer_->add_len(bytes_transferred);
 				bnet::ErrorCode err;
 				bcore::Slice readable;
