@@ -3,8 +3,8 @@
 #include "bnet/net_interface.h"
 #include <memory>
 #include <functional>
-#include "bnet/msghandler/proto_coder.h"
 #include "bnet/msghandler/frame_process.h"
+#include "bnet/protocoder/string_coder.h"
 
 namespace bnet {
 	

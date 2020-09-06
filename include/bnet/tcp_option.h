@@ -2,8 +2,10 @@
 
 #include <memory>
 #include <functional>
+#include <initializer_list>
 #include "bcore/buffer_pool.h"
 #include "net_interface.h"
+#include "bnet/msghandler/message_handler.h"
 
 namespace bnet {
 	const uint32_t kDefaultReadBufferSize = 65535;
@@ -32,24 +34,24 @@ namespace bnet {
 			}
 			session_ops_.clear();
 		}
+		static inline SessionOptionFunc SetReadBufferSize(uint32_t read_buffer_size) {
+			return [=](SessionOption& option) {
+				option.read_buffer_size = read_buffer_size;
+			};
+		}
+		static inline SessionOptionFunc SetWriteBufferSize(uint32_t write_buffer_size) {
+			return [=](SessionOption& option) {
+				option.write_buffer_size = write_buffer_size;
+			};
+		}
+		static inline SessionOptionFunc SetMessageHandler(std::shared_ptr<IMessageHandler> handler) {
+			return[arg = std::move(handler)](SessionOption& option) {
+				option.handler = std::move(arg);
+			};
+		}
 	private:
 		std::vector<SessionOptionFunc> session_ops_;
 	};
-	SessionOptionFunc set_read_buffer_size(uint32_t read_buffer_size) {
-		return [](SessionOption& option) {
-			option.read_buffer_size = read_buffer_size;
-		};
-	}
-	SessionOptionFunc set_write_buffer_size(uint32_t write_buffer_size)  {
-		return [](SessionOption& option) {
-			option.write_buffer_size = write_buffer_size;
-		};
-	}
-	SessionOptionFunc set_message_handler(std::shared_ptr<IMessageHandler> handler) {
-		return [](SessionOption& option) {
-			option.handler_ = std::move(handler);
-		};
-	}
 
 	struct ClientOption;
 	using ClientOptionFunc = std::function<void(ClientOption& option)>;
@@ -58,24 +60,35 @@ namespace bnet {
 		int connect_port = 0;
 		std::string client_name;
 
-		void StartUp(ErrorCode& err) {
+		bool StartUp(ErrorCode& err) {
 			SessionOption::StartUp(err);
 			for (auto& it : opts) {
 				it(*this);
 			}
 			opts.clear();
+			return true;
 		}
 		void SetClientOption(std::initializer_list<ClientOptionFunc> funcs) {
 			for (auto& it : funcs) {
-				opts.emplace_back(std::move(it));
+				opts.push_back(it);
 			}
+		}
+		static inline ClientOptionFunc SetConnectIp(std::string ip) {
+			return [&](ClientOption& option) {
+				option.connect_ip = std::move(ip);
+			};
+		}
+		static inline ClientOptionFunc SetConnectPort(int port) {
+			return[=](ClientOption& option) {
+				option.connect_port = port;
+			};
 		}
 	private:
 		std::vector<ClientOptionFunc> opts;
 	};
 
 	struct ServerOption;
-	using ServerOptionFunc = std::function<(ServerOption&)>;
+	using ServerOptionFunc = std::function<void(ServerOption&)>;
 	struct ServerOption : SessionOption {
 		std::string listen_ip;
 		int listen_port = 0;
@@ -89,7 +102,7 @@ namespace bnet {
 		void StartUp(ErrorCode& err) {
 			SessionOption::StartUp(err);
 			for (auto& it : server_option_opts) {
-				it(*this):
+				it(*this);
 			}
 			server_option_opts.clear();
 		}

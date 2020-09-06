@@ -172,10 +172,10 @@ namespace bcore {
 	class BufferPool : public Singleton<BufferPool> {
 	public:
 		BufferPool();
-		static inline UniqueByteBuf AllocBuffer(uint32_t min_size) {
+		static UniqueByteBuf AllocBuffer(uint32_t min_size) {
 			return Instance().rawAllocBuffer(min_size);
 		}
-		static inline SharedByteBuf AllocSharedBuffer(uint32_t min_size) {
+		static SharedByteBuf AllocSharedBuffer(uint32_t min_size) {
 			return Instance().rawAllocSharedBuffer(min_size);
 		}
 	protected:

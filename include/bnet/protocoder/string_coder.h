@@ -1,29 +1,29 @@
 #pragma once
 #include "bnet/net_interface.h"
+#include <string>
 
 namespace bnet {
 	class StringCoder : public IProtoCoder {
+
 	public:
-		StringCoder() : IProtoCoder(std::bind(&StringCoder::ReceiveMessage, this)) {}
-		virtual void* ProtocolSize(void* message, int& totalSize) override
+		virtual uint32_t ProtocolSize(void* message, int& msg_type, ErrorCode& err) override
 		{
-			
+			return static_cast<std::string*>(message)->size();
 		}
-
-		void ProtocolEncode(void* message, bcore::Slice& buf, int msg_type, ErrorCode& err) override
+		virtual void ProtocolEncode(void* message, bcore::Slice& buf, int msg_type, ErrorCode& err) override
 		{
-			return
-		}
-
-		void* ProtocolDecode(bcore::Slice& buf, ErrorCode& err, int& msg_type, bool is_part) override
-		{
-			if (is_part) {
-				return nullptr;
+			auto str = static_cast<std::string*>(message);
+			if (!buf.append(str->c_str(), str->size())) {
+				err = ERROR_CODE::kProtocolEncodeBufNotEnough;
+				return;
 			}
+		}
+		virtual void* ProtocolDecode(bcore::Slice& buf, ErrorCode& err, int& msg_type, bool is_part) override
+		{
 			return new std::string(buf.data(), buf.len());
 		}
-		void ReceiveMessage(void* message) {
-			auto str = static_cast<*std::string>(message);
+		void ReceiveMessage(void* message) override {
+			auto str = static_cast<std::string*>(message);
 			delete str;
 		}
 	};

@@ -6,17 +6,23 @@
 #include "bcore/buffer_pool.h"
 #include "bnet/socket_buffer.h"
 #include "bnet/msghandler/message_handler.h"
+#include "bnet/tcp_option.h"
+#include "bnet/socket_buffer.h"
 
 using asio::ip::tcp;
 namespace bcore_basio {
 	class TcpSession : public std::enable_shared_from_this<TcpSession>, public bnet::ISession
 	{
 	public:
-		TcpSession(std::shared_ptr<ThreadPoolContext> threadCtx) :
+		TcpSession(std::shared_ptr<ThreadPoolContext> threadCtx, std::shared_ptr<bnet::SessionOption> option) :
 			thread_context_(threadCtx),
 			socket_(*(thread_context_->ctx)),
-			buffer_()
-		{ }
+			option_(std::move(option)),
+			message_handler_(option_->handler)
+		{
+			read_buffer_ = std::make_unique<bnet::SocketBuffer>(option_->read_buffer_size);
+			read_buffer_bak_ = std::make_unique<bnet::SocketBuffer>(option_->read_buffer_size);
+		}
 
 		tcp::socket& Socket() { return socket_; }
 		void Start() { DoRead(); }
@@ -41,16 +47,16 @@ namespace bcore_basio {
 	private:
 		std::shared_ptr<ThreadPoolContext> thread_context_;
 		tcp::socket socket_;
-		std::array<char, 8192> buffer_;
+		std::shared_ptr<bnet::SessionOption> option_;
+		std::shared_ptr<bnet::IMessageHandler> message_handler_;
 
 		std::mutex write_buffer_mutex_;
-		
+
 		std::queue<bcore::UniqueByteBuf> writing_buffer_list_;
 		std::queue<bcore::UniqueByteBuf> write_buffer_list_;
 		std::atomic_bool write_flag_;
 
 		bnet::SocketBufferUniquePtr read_buffer_;
-		bnet::SocketBufferUniquePtr read_buffer_bak;
-		std::shared_ptr<bnet::IMessageHandler> message_handler_;
+		bnet::SocketBufferUniquePtr read_buffer_bak_;
 	};
 }

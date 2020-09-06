@@ -6,6 +6,8 @@
 #include <iostream>
 #include <chrono>
 #include "asio.hpp"
+#include "basio/tcp_client.h"
+#include "basio/thread_pool.h"
 
 using asio::ip::tcp;
 using std::chrono::high_resolution_clock;
@@ -13,7 +15,7 @@ using std::chrono::milliseconds;
 
 enum { max_length = 1024 };
 
-int main(int argc, char* argv[])
+int main11(int argc, char* argv[])
 {
 	try
 	{
@@ -54,5 +56,20 @@ int main(int argc, char* argv[])
 		std::cerr << "Exception: " << e.what() << "\n";
 	}
 
+	return 0;
+}
+using namespace bcore_basio;
+int main(int argc, char* argv[]) {
+	std::cout << "test tcp client\n";
+	auto pool = std::make_shared<bcore_basio::ThreadPool>(3);
+	auto option = std::make_shared<bnet::ClientOption>();
+	option->SetClientOption({ bnet::ClientOption::SetConnectIp(argv[0]),
+		bnet::ClientOption::SetConnectPort(std::atoi(argv[1]))});
+	TcpClient client(pool->AllocContext(10), option);
+	auto err = client.StartUp();
+	if (!err) {
+		std::cout << err.message() << std::endl;
+	}
+	pool->Wait();
 	return 0;
 }

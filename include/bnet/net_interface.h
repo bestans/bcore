@@ -19,9 +19,9 @@ namespace bnet {
 	class IMessageHandler {
 	public:
 		virtual ~IMessageHandler() {}
-		virtual uint32_t DecodeMessage(ISession* ses, bcore::Slice slice, ErrorCode& err);
-		virtual std::string DecodePartMessage(ISession* ses, bcore::Slice slice, ErrorCode& err);
-		virtual void EncodeMessage(ISession* ses, void* message, ErrorCode& err);
+		virtual uint32_t DecodeMessage(ISession* ses, bcore::Slice slice, ErrorCode& err) = 0;
+		virtual std::string DecodePartMessage(ISession* ses, bcore::Slice slice, ErrorCode& err) = 0;
+		virtual void EncodeMessage(ISession* ses, void* message, ErrorCode& err) = 0;
 		virtual void SetReceiveMessageFunc(ReceiveMessageFunc func) = 0;
 		virtual void Init() {}
 	};
@@ -38,8 +38,6 @@ namespace bnet {
 		virtual void ProtocolEncode(void* message, bcore::Slice& buf, int msg_type, ErrorCode& err) = 0;
 		virtual void* ProtocolDecode(bcore::Slice& buf, ErrorCode& err, int& msg_type, bool is_part) = 0;
 		virtual void ReceiveMessage(void* message) = 0;
-	protected:
-		ReceiveMessageFunc receive_func_;
 	};
 	struct ProtoCoderParam {
 		int msgType = 0;

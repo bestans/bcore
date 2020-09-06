@@ -38,11 +38,11 @@ namespace bcore_basio {
 						//close session
 						return;
 					}
-					read_buffer_bak->write_buffer(read_buffer_->readable_data(), read_buffer_->readable_size());
+					read_buffer_bak_->write_buffer(read_buffer_->readable_data(), read_buffer_->readable_size());
 					read_buffer_->reset();
 				}
 				else {
-					read_buffer_.swap(read_buffer_bak);
+					read_buffer_.swap(read_buffer_bak_);
 				}
 				DoRead();
 			});

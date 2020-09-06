@@ -57,6 +57,7 @@ namespace bnet {
 	public:
 		ErrorCode() : ErrorCode(ERROR_CODE::kSuccess) {}
 		ErrorCode(ERROR_CODE code) : err_code_(code) { }
+		ErrorCode(int code) : err_code_((ERROR_CODE)code) { }
 		ErrorCode(ERROR_CODE code, const char* str) : err_code_(code), extra_msg_(str) { }
 		ErrorCode(ERROR_CODE code, const std::string& str) : err_code_(code), extra_msg_(str) { }
 		

@@ -14,7 +14,7 @@ namespace bnet {
 		uint32_t cap() {
 			return buffer_->cap();
 		}
-		uint32_t add_len(uint32_t write_size) {
+		void add_len(uint32_t write_size) {
 			buffer_->add_len(write_size);
 		}
 		inline uint32_t len() {

@@ -1,14 +1,16 @@
 #include "basio/tcp_server.h"
 #include "basio/tcp_session.h"
+#include "bnet/tcp_option.h"
 #include "asio.hpp"
 #include <memory>
 #include <iostream>
 
 using namespace std;
+using namespace bnet;
 namespace bcore_basio {
 	void TcpServer::DoAccept()
 	{
-		auto conn = std::make_shared<TcpSession>(pool_->AllocContext(1));
+		auto conn = std::make_shared<TcpSession>(pool_->AllocContext(1), option_);
 		acceptor_.async_accept(conn->Socket(),
 			[this, conn](asio::error_code ec)
 			{
@@ -34,7 +36,7 @@ int main1(int argc, char* argv[]) {
 	//}
 	return 0;
 }
-int main(int argc, char* argv[]) {
+int main11(int argc, char* argv[]) {
 	std::cout << "test tcp server\n";
 	auto pool = std::make_shared<bcore_basio::ThreadPool>(3);
 	TcpServer s(pool->AllocContext(10), std::atoi("1111"));
