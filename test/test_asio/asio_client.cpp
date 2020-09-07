@@ -63,13 +63,21 @@ int main(int argc, char* argv[]) {
 	std::cout << "test tcp client\n";
 	auto pool = std::make_shared<bcore_basio::ThreadPool>(3);
 	auto option = std::make_shared<bnet::ClientOption>();
-	option->SetClientOption({ bnet::ClientOption::SetConnectIp(argv[0]),
-		bnet::ClientOption::SetConnectPort(std::atoi(argv[1]))});
+	auto f = [](bnet::ISession* ses, void* message) {
+		auto msg = static_cast<std::string*>(message);
+		std::cout << "receive:" << *msg << std::endl;
+		ses->SendMessage(message);
+		delete msg;
+	};
+	option->SetSessionOption({ bnet::SessionOption::SetReceiveMessageFunc(std::move(f)) });
 	TcpClient client(pool->AllocContext(10), option);
 	auto err = client.StartUp();
 	if (!err) {
 		std::cout << err.message() << std::endl;
+		return 0;
 	}
+	std::string str("1223");
+	client.GetSession()->SendMessage(&str);
 	pool->Wait();
 	return 0;
 }

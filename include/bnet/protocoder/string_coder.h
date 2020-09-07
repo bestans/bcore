@@ -22,8 +22,9 @@ namespace bnet {
 		{
 			return new std::string(buf.data(), buf.len());
 		}
-		void ReceiveMessage(void* message) override {
+		void ReceiveMessage(ISession* ses, void* message) override {
 			auto str = static_cast<std::string*>(message);
+			std::cout << "ReceiveMessage:" << *str << std::endl;
 			delete str;
 		}
 	};

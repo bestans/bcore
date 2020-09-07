@@ -7,7 +7,7 @@ namespace bnet {
 	class ISession {
 	public:
 		virtual ~ISession() {};
-		
+		virtual void SendMessage(void* message) = 0;
 	};
 	class IMessage {
 	public:
@@ -15,13 +15,13 @@ namespace bnet {
 		void ProtocolSize(IMessage* message, int& totalSize) {}
 	};
 
-	using ReceiveMessageFunc = std::function<void(void*)>;
+	using ReceiveMessageFunc = std::function<void(ISession*, void*)>;
 	class IMessageHandler {
 	public:
 		virtual ~IMessageHandler() {}
 		virtual uint32_t DecodeMessage(ISession* ses, bcore::Slice slice, ErrorCode& err) = 0;
 		virtual std::string DecodePartMessage(ISession* ses, bcore::Slice slice, ErrorCode& err) = 0;
-		virtual void EncodeMessage(ISession* ses, void* message, ErrorCode& err) = 0;
+		virtual bcore::UniqueByteBuf EncodeMessage(ISession* ses, void* message, ErrorCode& err) = 0;
 		virtual void SetReceiveMessageFunc(ReceiveMessageFunc func) = 0;
 		virtual void Init() {}
 	};
@@ -37,7 +37,7 @@ namespace bnet {
 		virtual uint32_t ProtocolSize(void* message, int& msg_type, ErrorCode& err) = 0;
 		virtual void ProtocolEncode(void* message, bcore::Slice& buf, int msg_type, ErrorCode& err) = 0;
 		virtual void* ProtocolDecode(bcore::Slice& buf, ErrorCode& err, int& msg_type, bool is_part) = 0;
-		virtual void ReceiveMessage(void* message) = 0;
+		virtual void ReceiveMessage(ISession* ses, void* message) = 0;
 	};
 	struct ProtoCoderParam {
 		int msgType = 0;

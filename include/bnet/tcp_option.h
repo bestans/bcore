@@ -26,13 +26,14 @@ namespace bnet {
 			}
 		}
 		void StartUp(ErrorCode& err) {
-			if (!handler) {
-				handler = MessageHandler::Instance();
-			}
 			for (auto& it : session_ops_) {
 				it(*this);
 			}
 			session_ops_.clear();
+			if (!handler) {
+				handler = MessageHandler::Instance();
+			}
+			handler->Init();
 		}
 		static inline SessionOptionFunc SetReadBufferSize(uint32_t read_buffer_size) {
 			return [=](SessionOption& option) {
@@ -45,8 +46,13 @@ namespace bnet {
 			};
 		}
 		static inline SessionOptionFunc SetMessageHandler(std::shared_ptr<IMessageHandler> handler) {
-			return[arg = std::move(handler)](SessionOption& option) {
-				option.handler = std::move(arg);
+			return[arg_handler = std::move(handler)](SessionOption& option) {
+				option.handler = arg_handler;
+			};
+		}
+		static inline SessionOptionFunc SetReceiveMessageFunc(bnet::ReceiveMessageFunc func) {
+			return[func_arg=std::move(func)](SessionOption& option) {
+				option.handler->SetReceiveMessageFunc(func_arg);
 			};
 		}
 	private:
@@ -56,16 +62,16 @@ namespace bnet {
 	struct ClientOption;
 	using ClientOptionFunc = std::function<void(ClientOption& option)>;
 	struct ClientOption : SessionOption {
-		std::string connect_ip;
-		int connect_port = 0;
+		std::string connect_ip = "127.0.0.1";
+		int connect_port = 7777;
 		std::string client_name;
 
 		bool StartUp(ErrorCode& err) {
-			SessionOption::StartUp(err);
 			for (auto& it : opts) {
 				it(*this);
 			}
 			opts.clear();
+			SessionOption::StartUp(err);
 			return true;
 		}
 		void SetClientOption(std::initializer_list<ClientOptionFunc> funcs) {
@@ -90,21 +96,22 @@ namespace bnet {
 	struct ServerOption;
 	using ServerOptionFunc = std::function<void(ServerOption&)>;
 	struct ServerOption : SessionOption {
-		std::string listen_ip;
-		int listen_port = 0;
+		std::string listen_ip = "127.0.0.1";
+		int listen_port = 7777;
 		std::string server_name;
 
 		void SetServerOption(std::initializer_list<ServerOptionFunc> funcs) {
 			for (auto& it : funcs) {
-				server_option_opts.emplace_back(std::move(it));
+				server_option_opts.push_back(std::move(it));
 			}
 		}
-		void StartUp(ErrorCode& err) {
-			SessionOption::StartUp(err);
+		bool StartUp(ErrorCode& err) {
 			for (auto& it : server_option_opts) {
 				it(*this);
 			}
 			server_option_opts.clear();
+			SessionOption::StartUp(err);
+			return true;
 		}
 	private:
 		std::vector<ServerOptionFunc> server_option_opts;

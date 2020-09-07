@@ -41,6 +41,7 @@ namespace bcore_basio {
 				DoWrite();
 			}
 		}
+		void SendMessage(void* message);
 	private:
 		void DoRead();
 		void DoWrite();

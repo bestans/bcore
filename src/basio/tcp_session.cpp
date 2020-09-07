@@ -84,4 +84,14 @@ namespace bcore_basio {
 			}
 		});
 	}
+
+	void TcpSession::SendMessage(void* message) {
+		bnet::ErrorCode err;
+		auto buffer = message_handler_->EncodeMessage(this, message, err);
+		if (err) {
+			std::cout << "SendMessage failed:" << err.message() << std::endl;
+			return;
+		}
+		WriteBuffer(std::move(buffer));
+	}
 }

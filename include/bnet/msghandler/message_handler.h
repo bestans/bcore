@@ -29,7 +29,7 @@ namespace bnet {
 			}
 			int msg_type = 0;
 			auto msg = proto_coder_->ProtocolDecode(message_data, err, msg_type, false);
-			receive_func_(msg);
+			receive_func_(ses, msg);
 			return read_len;
 		}
 		std::string DecodePartMessage(ISession* ses, bcore::Slice slice, ErrorCode& err) override {
@@ -49,24 +49,25 @@ namespace bnet {
 			str += read_len;
 			return std::move(str);
 		}
-		void EncodeMessage(ISession* ses, void* message, ErrorCode& err) {
+		bcore::UniqueByteBuf EncodeMessage(ISession* ses, void* message, ErrorCode& err) {
 			int msg_type = 0;
 			uint32_t msg_size = proto_coder_->ProtocolSize(message, msg_type, err);
 			if (!err) {
-				return;
+				return bcore::UniqueByteBuf();
 			}
 			auto total_size = msg_size + frame_->EncodeFrameLenSize(msg_size);
 			auto buffer = bcore::BufferPool::AllocBuffer(total_size);
 			bcore::Slice slice = buffer->to_slice();
 			frame_->EncodeFrame(msg_size, slice, err);
 			if (!err) {
-				return;
+				return bcore::UniqueByteBuf();
 			}
 			proto_coder_->ProtocolEncode(message, slice, msg_type, err);
 			if (!err) {
-				return;
+				return bcore::UniqueByteBuf();
 			}
 			buffer->add_len(slice.len());
+			return std::move(buffer);
 		}
 		void Init() override {
 			if (!proto_coder_) {
@@ -76,8 +77,8 @@ namespace bnet {
 				frame_ = std::make_shared<LengthFrameBuilder>();
 			}
 			if (!receive_func_) {
-				receive_func_ = [&](void* message) {
-					proto_coder_->ReceiveMessage(message);
+				receive_func_ = [&](ISession* ses, void* message) {
+					proto_coder_->ReceiveMessage(ses, message);
 				};
 			}
 		}
