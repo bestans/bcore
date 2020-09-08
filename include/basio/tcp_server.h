@@ -12,7 +12,7 @@ namespace bcore_basio {
 			thread_context_(threadCtx),
 			acceptor_(*(threadCtx->ctx), tcp::endpoint(asio::ip::address::from_string(option->listen_ip), option->listen_port)),
 			pool_(threadCtx->pool),
-			option_(std::make_shared<bnet::ServerOption>())
+			option_(std::move(option))
 		{
 		}
 		bnet::ErrorCode StartUp() {

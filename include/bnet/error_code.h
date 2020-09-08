@@ -30,7 +30,7 @@ namespace bnet {
 			if (c >= 0 && c < kErrorMsgSize) {
 				return error_msg[c];
 			}
-			return kUndefinedErrorMsg;
+			return std::to_string(c) + ":" + kUndefinedErrorMsg;
 		}
 		const char* name() const noexcept override { return "ErrorCategory"; }
 

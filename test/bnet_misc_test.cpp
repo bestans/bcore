@@ -8,7 +8,7 @@ using namespace bcore;
 
 TEST(bnet, share_coder) {
 	auto buf = BufferPool::AllocSharedBuffer(10);
-	auto slice = Slice(buf->data(), buf->cap());
+	auto slice = Slice(buf->data(), buf->cap(), 0);
 	for (int i = 1; i < 1000; i++) {
 		slice.reset_len(0);
 		ShareCoder::EncodeVarint(slice, i);

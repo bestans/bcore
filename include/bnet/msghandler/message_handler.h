@@ -20,7 +20,7 @@ namespace bnet {
 			if (!frame_->TryDecodeFrame(slice, err, read_len, message_data, false)) {
 				return 0;
 			}
-			if (!err) {
+			if (err) {
 				return 0;
 			}
 			if (!message_data) {
@@ -52,18 +52,18 @@ namespace bnet {
 		bcore::UniqueByteBuf EncodeMessage(ISession* ses, void* message, ErrorCode& err) {
 			int msg_type = 0;
 			uint32_t msg_size = proto_coder_->ProtocolSize(message, msg_type, err);
-			if (!err) {
+			if (err) {
 				return bcore::UniqueByteBuf();
 			}
 			auto total_size = msg_size + frame_->EncodeFrameLenSize(msg_size);
 			auto buffer = bcore::BufferPool::AllocBuffer(total_size);
 			bcore::Slice slice = buffer->to_slice();
 			frame_->EncodeFrame(msg_size, slice, err);
-			if (!err) {
+			if (err) {
 				return bcore::UniqueByteBuf();
 			}
 			proto_coder_->ProtocolEncode(message, slice, msg_type, err);
-			if (!err) {
+			if (err) {
 				return bcore::UniqueByteBuf();
 			}
 			buffer->add_len(slice.len());

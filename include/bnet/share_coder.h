@@ -40,7 +40,7 @@ namespace bnet {
 					return false;
 				}
 				auto b = uint8_t(slice.get(read_len++));
-				x |= (uint64_t)(b & 0x7F) << shift;
+				x |= ((uint64_t)b & 0x7F) << shift;
 				if (b < (uint8_t)0x80) {
 					return true;
 				}

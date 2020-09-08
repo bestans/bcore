@@ -21,18 +21,18 @@ namespace bnet {
 		std::shared_ptr<IMessageHandler> handler;
 
 		void SetSessionOption(std::initializer_list<SessionOptionFunc> funcs) {
-			for (auto& it : session_ops_) {
+			for (auto& it : funcs) {
 				session_ops_.emplace_back(std::move(it));
 			}
 		}
 		void StartUp(ErrorCode& err) {
+			if (!handler) {
+				handler = MessageHandler::Instance();
+			}
 			for (auto& it : session_ops_) {
 				it(*this);
 			}
 			session_ops_.clear();
-			if (!handler) {
-				handler = MessageHandler::Instance();
-			}
 			handler->Init();
 		}
 		static inline SessionOptionFunc SetReadBufferSize(uint32_t read_buffer_size) {

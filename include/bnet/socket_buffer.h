@@ -27,7 +27,7 @@ namespace bnet {
 			}
 		}
 		char* readable_data() {
-			return buffer_->data() + readable_size();
+			return buffer_->data() + read_index_;
 		}
 		uint32_t readable_size() {
 			return len() - read_index_;

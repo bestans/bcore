@@ -9,7 +9,7 @@ namespace bcore_basio {
 		socket_.async_read_some(
 			asio::buffer(read_buffer_->writable_data(), read_buffer_->writable_size()), [this, self](asio::error_code ec, std::size_t bytes_transferred)
 			{
-				if (!ec) {
+				if (ec) {
 					return;
 				}
 				//socket_.shutdown(asio::socket_base::shutdown_both);
@@ -19,13 +19,16 @@ namespace bcore_basio {
 				while (true) {
 					readable.reset_data(read_buffer_->readable_data(), read_buffer_->readable_size());
 					auto read_len = message_handler_->DecodeMessage(this, readable, err);
-					if (!err) {
+					if (err) {
 						return;
 					}
 					if (read_len <= 0) {
 						break;
 					}
 					read_buffer_->add_read_index(read_len);
+					if (read_buffer_->readable_size() <= 0) {
+						break;
+					}
 				}
 				if (read_buffer_->readable_size() <= 0) {
 					read_buffer_->reset();

@@ -24,7 +24,7 @@ namespace bcore_basio {
 			}
 			session_ = std::make_shared<TcpSession>(pool_->AllocContext(1), option_);
 			session_->Socket().connect(tcp::endpoint(asio::ip::address::from_string(option_->connect_ip), (unsigned short)option_->connect_port), err);
-			if (!err) {
+			if (err) {
 				return bnet::ErrorCode(bnet::ERROR_CODE::kConnectFailed, err.message());
 			}
 			session_->Start();

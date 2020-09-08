@@ -8,6 +8,7 @@
 #include "asio.hpp"
 #include "basio/tcp_client.h"
 #include "basio/thread_pool.h"
+#include <future>         // std::promise, std::future
 
 using asio::ip::tcp;
 using std::chrono::high_resolution_clock;
@@ -63,21 +64,37 @@ int main(int argc, char* argv[]) {
 	std::cout << "test tcp client\n";
 	auto pool = std::make_shared<bcore_basio::ThreadPool>(3);
 	auto option = std::make_shared<bnet::ClientOption>();
-	auto f = [](bnet::ISession* ses, void* message) {
+	std::atomic_int value;
+	std::promise<bool> prom;
+	std::future<bool> wait = prom.get_future();
+	int times = 100000;
+	auto f = [&](bnet::ISession* ses, void* message) {
 		auto msg = static_cast<std::string*>(message);
-		std::cout << "receive:" << *msg << std::endl;
+		//std::cout << "receive:" << *msg << std::endl;
+		auto temp = value.fetch_add(1);
+		if (temp >= times) {
+			//printf("%d\n", temp);
+			//std::cout << value << std::endl;
+			prom.set_value(true);
+			delete msg;
+			return;
+		}
 		ses->SendMessage(message);
 		delete msg;
 	};
 	option->SetSessionOption({ bnet::SessionOption::SetReceiveMessageFunc(std::move(f)) });
 	TcpClient client(pool->AllocContext(10), option);
 	auto err = client.StartUp();
-	if (!err) {
+	if (err) {
 		std::cout << err.message() << std::endl;
 		return 0;
 	}
 	std::string str("1223");
+	auto beginTime = high_resolution_clock::now();
 	client.GetSession()->SendMessage(&str);
+	wait.get();
+	auto timeInterval = std::chrono::duration_cast<milliseconds>(high_resolution_clock::now() - beginTime);
+	std::cout << "cost time " << timeInterval.count() << ",times=" << times << std::endl;
 	pool->Wait();
 	return 0;
 }

@@ -24,7 +24,7 @@ namespace bcore {
 	class Slice {
 	public:
 		Slice() {}
-		Slice(char* data_arg, uint32_t cap_size) : data_(data_arg), cap_(cap_size), len_(0) {}
+		Slice(char* data_arg, uint32_t cap_size, uint32_t len) : data_(data_arg), cap_(cap_size), len_(len) {}
 		char* data() {
 			return data_;
 		}
@@ -47,6 +47,7 @@ namespace bcore {
 		bool append(const char* str, uint32_t size) {
 			if (size <= cap_ && len_ <= cap_ - size) {
 				memcpy(data_ + len_, str, size);
+				len_ += size;
 				return true;
 			}
 			return false;
@@ -81,7 +82,7 @@ namespace bcore {
 			len_ += real_size;
 		}
 		inline Slice to_slice() {
-			return Slice(data_, len_);
+			return Slice(data_, cap_, len_);
 		}
 		Slice make_slice(uint32_t start_index, uint32_t end_index) {
 			if (start_index > len_) {
@@ -94,7 +95,8 @@ namespace bcore {
 				end_index = start_index;
 			}
 			
-			return Slice(data_ + start_index, end_index - end_index);
+			auto temp_cap = end_index - start_index;
+			return Slice(data_ + start_index, temp_cap, temp_cap);
 		}
 	protected:
 		char* data_;
@@ -113,7 +115,7 @@ namespace bcore {
 #endif
 	class ByteBuf : public Slice {
 	public:
-		ByteBuf(uint32_t cap_arg) : Slice(new char[cap_arg], cap_arg) {
+		ByteBuf(uint32_t cap_arg) : Slice(new char[cap_arg], cap_arg, 0) {
 #ifdef BTEST
 			if (ByteBufAlloc != nullptr) {
 				ByteBufAlloc(this, true);
@@ -132,7 +134,7 @@ namespace bcore {
 		}
 		void reset_data(char* data_arg, uint32_t len_arg) = delete;
 		Slice to_slice() {
-			return Slice(data_, cap_);
+			return Slice(data_, cap_, 0);
 		}
 	};
 	using SliceSharedPtr = std::shared_ptr<Slice>;
