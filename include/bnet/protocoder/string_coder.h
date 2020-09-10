@@ -4,8 +4,11 @@
 
 namespace bnet {
 	class StringCoder : public IProtoCoder {
-
 	public:
+		static std::shared_ptr<StringCoder> NewInstance() {
+			static std::shared_ptr<StringCoder> g_instance = std::make_shared<StringCoder>();
+			return g_instance;
+		}
 		virtual uint32_t ProtocolSize(void* message, int& msg_type, ErrorCode& err) override
 		{
 			return static_cast<std::string*>(message)->size();

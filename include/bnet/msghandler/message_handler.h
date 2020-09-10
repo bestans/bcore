@@ -10,6 +10,12 @@ namespace bnet {
 	
 	class MessageHandler : public IMessageHandler {
 	public:
+		MessageHandler() :
+			frame_(LengthFrameBuilder::NewInstance()),
+			proto_coder_(StringCoder::NewInstance())
+		{
+
+		}
 		static std::shared_ptr<MessageHandler> Instance() {
 			static std::shared_ptr<MessageHandler> g_instance = std::make_shared<MessageHandler>();
 			return g_instance;
@@ -86,8 +92,9 @@ namespace bnet {
 			receive_func_ = func;
 		}
 	private:
-		std::shared_ptr<IProtoCoder> proto_coder_;
+	private:
 		std::shared_ptr<IFrameProcess> frame_;
+		std::shared_ptr<IProtoCoder> proto_coder_;
 		ReceiveMessageFunc receive_func_;
 	};
 }
