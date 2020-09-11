@@ -5,10 +5,6 @@
 namespace bnet {
 	class StringCoder : public IProtoCoder {
 	public:
-		static std::shared_ptr<StringCoder> NewInstance() {
-			static std::shared_ptr<StringCoder> g_instance = std::make_shared<StringCoder>();
-			return g_instance;
-		}
 		virtual uint32_t ProtocolSize(void* message, int& msg_type, ErrorCode& err) override
 		{
 			return static_cast<std::string*>(message)->size();
@@ -25,10 +21,8 @@ namespace bnet {
 		{
 			return new std::string(buf.data(), buf.len());
 		}
-		void ReceiveMessage(ISession* ses, void* message) override {
-			auto str = static_cast<std::string*>(message);
-			std::cout << "ReceiveMessage:" << *str << std::endl;
-			delete str;
+		bool IsValidProtoType(type_info& other) override {
+			return typeid(std::string) == other;
 		}
 	};
 }

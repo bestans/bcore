@@ -19,7 +19,16 @@ namespace bnet {
 		uint32_t write_buffer_size = kDefaultWriteBufferSize;
 		uint32_t max_message_size = kMaxMessageSize;
 		std::shared_ptr<IMessageHandler> handler;
-
+		
+		template <class T>
+		void SetReceiveMessageFunc(std::function<void(ISession*, T*)> func) {
+			if (!handler->IsValidProtoType(typeid(T))) {
+				throw new std::runtime_error("invalid proto type");
+			}
+			receive_func_ = [hold = std::move(func)](ISession* ses, void* message) {
+				hold(ses, static_cast<T*>(message));
+				};
+		}
 		void SetSessionOption(std::initializer_list<SessionOptionFunc> funcs) {
 			for (auto& it : funcs) {
 				session_ops_.emplace_back(std::move(it));
@@ -33,7 +42,7 @@ namespace bnet {
 				it(*this);
 			}
 			session_ops_.clear();
-			handler->Init();
+			handler->SetReceiveMessageFunc(receive_func_);
 		}
 		static inline SessionOptionFunc SetReadBufferSize(uint32_t read_buffer_size) {
 			return [=](SessionOption& option) {
@@ -50,13 +59,9 @@ namespace bnet {
 				option.handler = arg_handler;
 			};
 		}
-		static inline SessionOptionFunc SetReceiveMessageFunc(bnet::ReceiveMessageFunc func) {
-			return[func_arg=std::move(func)](SessionOption& option) {
-				option.handler->SetReceiveMessageFunc(func_arg);
-			};
-		}
 	private:
 		std::vector<SessionOptionFunc> session_ops_;
+		ReceiveMessageFunc receive_func_;
 	};
 
 	struct ClientOption;

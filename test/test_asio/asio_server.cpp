@@ -14,6 +14,15 @@ int main(int argc, char* argv[]) {
 	auto pool = std::make_shared<bcore_basio::ThreadPool>(3);
 	auto option = std::make_shared<ServerOption>();
 	std::atomic_int value;
+	option->SetReceiveMessageFunc<std::string>([&](bnet::ISession* ses, std::string* msg) {
+		//std::cout << "receivexxx:" << *msg << std::endl;
+		ses->SendMessage(msg);
+		delete msg;
+		if (value.fetch_add(1) >= 100000) {
+			std::cout << value << std::endl;
+		}
+		});
+
 	auto f = [&](bnet::ISession* ses, void* message) {
 		auto msg = static_cast<std::string*>(message);
 		//std::cout << "receivexxx:" << *msg << std::endl;
@@ -23,7 +32,6 @@ int main(int argc, char* argv[]) {
 			std::cout << value << std::endl;
 		}
 	};
-	option->SetSessionOption({ bnet::SessionOption::SetReceiveMessageFunc(std::move(f)) });
 	TcpServer s(pool->AllocContext(10), std::move(option));
 	s.StartUp();
 	pool->Wait();

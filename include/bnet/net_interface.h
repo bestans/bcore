@@ -24,6 +24,7 @@ namespace bnet {
 		virtual bcore::UniqueByteBuf EncodeMessage(ISession* ses, void* message, ErrorCode& err) = 0;
 		virtual void SetReceiveMessageFunc(ReceiveMessageFunc func) = 0;
 		virtual void Init() {}
+		virtual bool IsValidProtoType(type_info& other) = 0;
 	};
 	class MessageData {
 
@@ -37,7 +38,12 @@ namespace bnet {
 		virtual uint32_t ProtocolSize(void* message, int& msg_type, ErrorCode& err) = 0;
 		virtual void ProtocolEncode(void* message, bcore::Slice& buf, int msg_type, ErrorCode& err) = 0;
 		virtual void* ProtocolDecode(bcore::Slice& buf, ErrorCode& err, int& msg_type, bool is_part) = 0;
-		virtual void ReceiveMessage(ISession* ses, void* message) = 0;
+		virtual bool IsValidProtoType(type_info& other) = 0;
+		void SetMessageFunc(ReceiveMessageFunc func) {
+			receive_func_ = func;
+		}
+	private:
+		ReceiveMessageFunc receive_func_;
 	};
 	struct ProtoCoderParam {
 		int msgType = 0;

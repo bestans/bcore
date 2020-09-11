@@ -68,8 +68,7 @@ int main(int argc, char* argv[]) {
 	std::promise<bool> prom;
 	std::future<bool> wait = prom.get_future();
 	int times = 100000;
-	auto f = [&](bnet::ISession* ses, void* message) {
-		auto msg = static_cast<std::string*>(message);
+	auto f = [&](bnet::ISession* ses, std::string* msg) {
 		//std::cout << "receive:" << *msg << std::endl;
 		auto temp = value.fetch_add(1);
 		if (temp >= times) {
@@ -79,10 +78,10 @@ int main(int argc, char* argv[]) {
 			delete msg;
 			return;
 		}
-		ses->SendMessage(message);
+		ses->SendMessage(msg);
 		delete msg;
 	};
-	option->SetSessionOption({ bnet::SessionOption::SetReceiveMessageFunc(std::move(f)) });
+	option->SetReceiveMessageFunc<std::string>(std::move(f));
 	TcpClient client(pool->AllocContext(10), option);
 	auto err = client.StartUp();
 	if (err) {

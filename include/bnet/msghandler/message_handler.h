@@ -12,9 +12,8 @@ namespace bnet {
 	public:
 		MessageHandler() :
 			frame_(LengthFrameBuilder::NewInstance()),
-			proto_coder_(StringCoder::NewInstance())
+			proto_coder_(new StringCoder())
 		{
-
 		}
 		static std::shared_ptr<MessageHandler> Instance() {
 			static std::shared_ptr<MessageHandler> g_instance = std::make_shared<MessageHandler>();
@@ -75,23 +74,13 @@ namespace bnet {
 			buffer->add_len(slice.len());
 			return std::move(buffer);
 		}
-		void Init() override {
-			if (!proto_coder_) {
-				proto_coder_ = std::make_shared<StringCoder>();
-			}
-			if (!frame_) {
-				frame_ = std::make_shared<LengthFrameBuilder>();
-			}
-			if (!receive_func_) {
-				receive_func_ = [&](ISession* ses, void* message) {
-					proto_coder_->ReceiveMessage(ses, message);
-				};
-			}
+		bool IsValidProtoType(type_info& other) {
+			return proto_coder_->IsValidProtoType(other);
 		}
 		void SetReceiveMessageFunc(ReceiveMessageFunc func) override {
+			proto_coder_->SetMessageFunc(std::move(func));
 			receive_func_ = func;
 		}
-	private:
 	private:
 		std::shared_ptr<IFrameProcess> frame_;
 		std::shared_ptr<IProtoCoder> proto_coder_;
