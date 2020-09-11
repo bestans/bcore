@@ -8,20 +8,27 @@
 using namespace std;
 using namespace bnet;
 using namespace bcore_basio;
+class Base {
+
+};
+class Devide : public Base {
+
+};
 
 int main(int argc, char* argv[]) {
-	std::cout << "test tcp server\n";
+	std::cout << "tcp server start\n";
 	auto pool = std::make_shared<bcore_basio::ThreadPool>(3);
 	auto option = std::make_shared<ServerOption>();
 	std::atomic_int value;
 	option->SetReceiveMessageFunc<std::string>([&](bnet::ISession* ses, std::string* msg) {
-		//std::cout << "receivexxx:" << *msg << std::endl;
+		std::cout << "receivexxx:" << *msg << std::endl;
 		ses->SendMessage(msg);
 		delete msg;
-		if (value.fetch_add(1) >= 100000) {
+		
+		if (++value % 100000 == 0) {
 			std::cout << value << std::endl;
-		}
-		});
+		}}
+	);
 
 	auto f = [&](bnet::ISession* ses, void* message) {
 		auto msg = static_cast<std::string*>(message);

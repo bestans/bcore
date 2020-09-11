@@ -22,12 +22,12 @@ namespace bnet {
 		
 		template <class T>
 		void SetReceiveMessageFunc(std::function<void(ISession*, T*)> func) {
-			if (!handler->IsValidProtoType(typeid(T))) {
-				throw new std::runtime_error("invalid proto type");
-			}
-			receive_func_ = [hold = std::move(func)](ISession* ses, void* message) {
+			auto f = [hold = std::move(func)](ISession* ses, void* message) {
 				hold(ses, static_cast<T*>(message));
-				};
+			};
+			session_ops_.emplace_back([rf = std::move(f)](SessionOption& option) {
+				option.handler->SetReceiveMessageFunc(rf);
+			});
 		}
 		void SetSessionOption(std::initializer_list<SessionOptionFunc> funcs) {
 			for (auto& it : funcs) {
@@ -42,7 +42,6 @@ namespace bnet {
 				it(*this);
 			}
 			session_ops_.clear();
-			handler->SetReceiveMessageFunc(receive_func_);
 		}
 		static inline SessionOptionFunc SetReadBufferSize(uint32_t read_buffer_size) {
 			return [=](SessionOption& option) {
@@ -54,14 +53,8 @@ namespace bnet {
 				option.write_buffer_size = write_buffer_size;
 			};
 		}
-		static inline SessionOptionFunc SetMessageHandler(std::shared_ptr<IMessageHandler> handler) {
-			return[arg_handler = std::move(handler)](SessionOption& option) {
-				option.handler = arg_handler;
-			};
-		}
 	private:
 		std::vector<SessionOptionFunc> session_ops_;
-		ReceiveMessageFunc receive_func_;
 	};
 
 	struct ClientOption;
@@ -72,11 +65,11 @@ namespace bnet {
 		std::string client_name;
 
 		bool StartUp(ErrorCode& err) {
+			SessionOption::StartUp(err);
 			for (auto& it : opts) {
 				it(*this);
 			}
 			opts.clear();
-			SessionOption::StartUp(err);
 			return true;
 		}
 		void SetClientOption(std::initializer_list<ClientOptionFunc> funcs) {

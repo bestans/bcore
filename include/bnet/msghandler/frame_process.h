@@ -5,7 +5,7 @@ namespace bnet {
 	class LengthFrameBuilder : public IFrameProcess {
 	public:
 		static std::shared_ptr<LengthFrameBuilder> NewInstance() {
-			static std::shared_ptr<LengthFrameBuilder> g_instance;
+			static std::shared_ptr<LengthFrameBuilder> g_instance = std::make_shared<LengthFrameBuilder>();
 			return g_instance;
 		}
 		LengthFrameBuilder() {

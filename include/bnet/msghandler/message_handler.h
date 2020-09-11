@@ -12,12 +12,11 @@ namespace bnet {
 	public:
 		MessageHandler() :
 			frame_(LengthFrameBuilder::NewInstance()),
-			proto_coder_(new StringCoder())
+			proto_coder_(StringCoder::NewInstance())
 		{
 		}
 		static std::shared_ptr<MessageHandler> Instance() {
-			static std::shared_ptr<MessageHandler> g_instance = std::make_shared<MessageHandler>();
-			return g_instance;
+			return std::make_shared<MessageHandler>();
 		}
 		uint32_t DecodeMessage(ISession* ses, bcore::Slice slice, ErrorCode& err) {
 			uint32_t read_len = 0;
@@ -74,11 +73,10 @@ namespace bnet {
 			buffer->add_len(slice.len());
 			return std::move(buffer);
 		}
-		bool IsValidProtoType(type_info& other) {
-			return proto_coder_->IsValidProtoType(other);
+		bool IsValidProtoType(const type_info& other) {
+			return true;
 		}
 		void SetReceiveMessageFunc(ReceiveMessageFunc func) override {
-			proto_coder_->SetMessageFunc(std::move(func));
 			receive_func_ = func;
 		}
 	private:
