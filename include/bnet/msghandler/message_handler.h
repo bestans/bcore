@@ -40,7 +40,7 @@ namespace bnet {
 			uint32_t read_len = 0;
 			bcore::Slice message_data;
 			if (!frame_->TryDecodeFrame(slice, err, read_len, message_data, true)) {
-				return 0;
+				return std::string();
 			}
 			int msg_type = 0;
 			proto_coder_->ProtocolDecode(message_data, err, msg_type, true);

@@ -17,28 +17,18 @@ class Devide : public Base {
 
 int main(int argc, char* argv[]) {
 	std::cout << "tcp server start\n";
-	auto pool = std::make_shared<bcore_basio::ThreadPool>(3);
+	auto pool = std::make_shared<bcore_basio::ThreadPool>(10);
 	auto option = std::make_shared<ServerOption>();
 	std::atomic_int value;
 	option->SetReceiveMessageFunc<std::string>([&](bnet::ISession* ses, std::string* msg) {
-		std::cout << "receivexxx:" << *msg << std::endl;
+		//std::cout << "receivexxx:" << *msg << std::endl;
 		ses->SendMessage(msg);
 		delete msg;
-		
+
 		if (++value % 100000 == 0) {
 			std::cout << value << std::endl;
 		}}
 	);
-
-	auto f = [&](bnet::ISession* ses, void* message) {
-		auto msg = static_cast<std::string*>(message);
-		//std::cout << "receivexxx:" << *msg << std::endl;
-		ses->SendMessage(message);
-		delete msg;
-		if (value.fetch_add(1) >= 100000) {
-			std::cout << value << std::endl;
-		}
-	};
 	TcpServer s(pool->AllocContext(10), std::move(option));
 	s.StartUp();
 	pool->Wait();

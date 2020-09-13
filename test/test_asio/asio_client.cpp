@@ -69,11 +69,9 @@ int main(int argc, char* argv[]) {
 	std::future<bool> wait = prom.get_future();
 	int times = 100000;
 	auto f = [&](bnet::ISession* ses, std::string* msg) {
-		//std::cout << "receive:" << *msg << std::endl;
-		auto temp = value.fetch_add(1);
+		auto temp = value++;
 		if (temp >= times) {
-			//printf("%d\n", temp);
-			//std::cout << value << std::endl;
+			std::cout << "finish:" << temp << std::endl;
 			prom.set_value(true);
 			delete msg;
 			return;
