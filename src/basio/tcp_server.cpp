@@ -11,6 +11,10 @@ namespace bcore_basio {
 	void TcpServer::DoAccept()
 	{
 		auto conn = std::make_shared<TcpSession>(pool_->AllocContext(1), option_);
+		bnet::ErrorCode err;
+		if (!conn->StartUp(err)) {
+			return;
+		}
 		acceptor_.async_accept(conn->Socket(),
 			[this, conn](asio::error_code ec)
 			{

@@ -11,6 +11,7 @@ namespace bnet {
 		kProtocolEncodeBufNotEnough,
 		kDecodeMessageFailed,
 		kConnectFailed,
+		kSessionOptionError,
 	};
 
 	class ErrorCategory : public std::error_category

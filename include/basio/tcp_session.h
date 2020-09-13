@@ -25,7 +25,37 @@ namespace bcore_basio {
 		}
 
 		tcp::socket& Socket() { return socket_; }
-		void Start() { DoRead(); }
+		bool StartUp(bnet::ErrorCode& err) {
+			std::error_code std_err;
+			//规定套接字输入处理的最小字节数
+			//socket_.set_option(asio::socket_base::receive_low_watermark(100));
+			//规定套接字数据发送的最小字节数
+			//socket_.set_option(asio::socket_base::send_low_watermark(100));
+			//如果为true，套接字能绑定到一个已用的地址（用于对TCP套接字处于TIME_WAIT状态下的socket，才可以重复绑定使用）
+			//正式服务器不建议设置
+			//socket_.set_option(asio::socket_base::reuse_address(true));
+			//socket_.set_option(asio::socket_base::keep_alive(100), std_err);
+			//CHECK_TCP_SESSION_STARTUP;
+			//如果为true，套接字在有未发送数据的时候挂起close
+			//socket_.set_option(asio::socket_base::linger(true, 30), std_err);
+			//CHECK_TCP_SESSION_STARTUP;
+#define CHECK_TCP_SESSION_STARTUP \
+			if (std_err) { \
+				err = std::move(bnet::ErrorCode(bnet::ERROR_CODE::kSessionOptionError, std_err.message()));\
+				return false;\
+			}
+
+			//套接字接受缓冲区大小
+			socket_.set_option(asio::socket_base::receive_buffer_size(option_->read_buffer_size), std_err);
+			CHECK_TCP_SESSION_STARTUP;
+			//套接字发送缓冲区大小
+			socket_.set_option(asio::socket_base::send_buffer_size(option_->write_buffer_size), std_err);
+			CHECK_TCP_SESSION_STARTUP;
+			return true;
+		}
+		void Start() {
+			DoRead();
+		}
 		void WriteBuffer(bcore::UniqueByteBuf buf) {
 			bool can_write = false;
 			{
