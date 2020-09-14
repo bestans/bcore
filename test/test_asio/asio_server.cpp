@@ -16,27 +16,22 @@ class Devide : public Base {
 };
 
 //µ›πÈ÷’÷πÃıº˛
-template <typename T>
-ostream& FormatString(ostream& os, int count, const T& t) {
-	os << t;
-	//os << count;
-	//os << ((count % 2 == 0) ? "=" : "|");
-	return os;
+template <typename T, typename P>
+inline ostream& FormatString(ostream& os, const T& t, const P& p) {
+	return os << "|" << t << "=" << p;
 }
 
 //µ›πÈÃÂ
-template <typename T, typename... Args>
-ostream& FormatString(ostream& os, int count, const T& t, const Args&... rest) {
-	os << t;
-	//os << count;
-	os << ((count % 2 == 0) ? "=" : "|");
-	return FormatString(os, count + 1, rest...);
+template <typename T, typename P, typename... Args>
+inline ostream& FormatString(ostream& os, const T& t, const P& p, const Args&... rest) {
+	os << "|" << t << "=" << p;
+	return FormatString(os, rest...);
 }
 
-template <typename T, typename... Args>
-ostream& LogString(ostream& os, const char* desc, const T& t, const Args&... rest) {
-	os << desc << "|" << t << "=";
-	return FormatString(os, 1, rest...);
+template <typename... Args>
+ostream& LogString(ostream& os, const char* desc, const Args&... rest) {
+	os << desc;
+	return FormatString(os, rest...);
 }
 
 int main(int argc, char* argv[]) {
