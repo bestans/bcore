@@ -1,6 +1,7 @@
 #include "basio/tcp_server.h"
 #include "basio/tcp_session.h"
 #include "bnet/tcp_option.h"
+#include "blog/log.h"
 #include "asio.hpp"
 #include <memory>
 #include <iostream>
@@ -14,30 +15,30 @@ class Base {
 class Devide : public Base {
 
 };
-
-//µ›πÈ÷’÷πÃıº˛
-template <typename T, typename P>
-inline ostream& FormatString(ostream& os, const T& t, const P& p) {
-	return os << "|" << t << "=" << p;
-}
-
-//µ›πÈÃÂ
-template <typename T, typename P, typename... Args>
-inline ostream& FormatString(ostream& os, const T& t, const P& p, const Args&... rest) {
-	os << "|" << t << "=" << p;
-	return FormatString(os, rest...);
-}
-
-template <typename... Args>
-ostream& LogString(ostream& os, const char* desc, const Args&... rest) {
-	os << desc;
-	return FormatString(os, rest...);
-}
+//
+////µ›πÈ÷’÷πÃıº˛
+//template <typename T, typename P>
+//inline ostream& FormatString(ostream& os, const T& t, const P& p) {
+//	return os << "|" << t << "=" << p;
+//}
+//
+////µ›πÈÃÂ
+//template <typename T, typename P, typename... Args>
+//inline ostream& FormatString(ostream& os, const T& t, const P& p, const Args&... rest) {
+//	os << "|" << t << "=" << p;
+//	return FormatString(os, rest...);
+//}
+//
+//template <typename... Args>
+//ostream& LogString(ostream& os, const char* desc, const Args&... rest) {
+//	os << desc;
+//	return FormatString(os, rest...);
+//}
 
 int main(int argc, char* argv[]) {
 	std::cout << "tcp server start\n";
 	std::stringstream ss;
-	LogString(ss, "desc1", "desc2", 11, "desc3", "tcp server start");
+	BLOG(LOG_LEVEL::DEBUG, __FILE__, __LINE__, "desc1", "desc2", 11);
 	std::cout << ss.str();
 	auto pool = std::make_shared<bcore_basio::ThreadPool>(10);
 	auto option = std::make_shared<ServerOption>();
