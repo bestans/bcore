@@ -111,65 +111,56 @@ inline typename enable_if<!HasMember_tolog<T>::value>::type AppendLogValue(std::
 {
 	os << v; 
 }
-//下边的Octets,std::vector,std::map因为没有tolog,也没有<<,所以需要特化一下AppendLogValue
-template<>
-inline void AppendLogValue(std::ostream& os, const Octets& v)
-{
-	os.write(reinterpret_cast<const char*>(v.cbegin()), v.size());
-}
 
 template<typename T>
 inline void AppendLogValue(std::ostream& os, const std::vector<T>& v) {
+	os << "[";
 	typename std::vector<T>::const_iterator it;
 	for (it = v.begin(); it != v.end(); ++it){
-		if (it != v.begin()) os << ";";
+		if (it != v.begin()) os << ",";
 		AppendLogValue(os, *it);
 	}
+	os << "]";
 }
 
 template<class T>
 inline void AppendLogValue(std::ostream& os, const std::list<T>& v) {
+	os << "[";
 	typename std::list<T>::const_iterator it;
 	for (it = v.begin(); it != v.end(); ++it){
-		if (it != v.begin()) os << ";";
+		if (it != v.begin()) os << ",";
 		AppendLogValue(os, *it);
 	}
+	os << "[";
 }
 
 template<class T>
 inline void AppendLogValue(std::ostream& os, const std::deque<T>& v) {
+	os << "[";
 	typename std::deque<T>::const_iterator it;
 	for (it = v.begin(); it != v.end(); ++it){
-		if (it != v.begin()) os << ";";
+		if (it != v.begin()) os << ",";
 		AppendLogValue(os, *it);
 	}
+	os << "]";
 }
+
+//template<class T>
+//inline void AppendLogValue(std::ostream& os, const std::queue<T>& v) {
+//	typename std::queue<T>::const_iterator it;
+//	for (it = v.begin(); it != v.end(); ++it){
+//		if (it != v.begin()) os << ";";
+//		AppendLogValue(os, *it);
+//	}
+//}
 
 template<class T>
-inline void AppendLogValue(std::ostream& os, const std::queue<T>& v) {
-	typename std::queue<T>::const_iterator it;
-	for (it = v.begin(); it != v.end(); ++it){
+inline void AppendLogValue(std::ostream& os, const T& v) {
+	for (auto it = v.begin(); it != v.end(); ++it){
 		if (it != v.begin()) os << ";";
 		AppendLogValue(os, *it);
 	}
 }
-
-template<class T>
-inline void AppendLogValue(std::ostream& os, const std::set<T>& v) {
-	typename std::set<T>::const_iterator it;
-	for (it = v.begin(); it != v.end(); ++it){
-		if (it != v.begin()) os << ";";
-		AppendLogValue(os, *it);
-	}
-}
-
-// 用于对日志进行过滤，比如截取部分日志转为紫龙日志
-struct LogFilter {
-	virtual void OnLogValue(const std::string& attr, const std::string& value) = 0;
-	virtual void OnLogFinished() = 0;
-	virtual ~LogFilter() {}
-};
-typedef std::vector<LogFilter*> LogFilterList;
 
 /* 符合标准格式的log流, 为后续的log输出做准备 */
 class LogStream: public std::stringstream
@@ -185,30 +176,14 @@ public:
 	template<class T>
 	LogStream& P(const char* attr, const T& v) {
 		*this << SEP() << attr << EQ();
-
-		std::streamoff old_pos = tellp();
 		AppendLogValue(*this, v);
-
-		std::string value = str().substr(old_pos, tellp() - old_pos);
-		for (LogFilterList::const_iterator it = Filters().begin();
-				it != Filters().end(); ++it) {
-			(*it)->OnLogValue(attr, value);
-		}
 		return *this;
 	}
 
 	template<class T>
 	LogStream& P(const std::string& attr, const T& v) {
 		*this << SEP() << attr << EQ();
-
-		std::streamoff old_pos = tellp();
 		AppendLogValue(*this, v);
-
-		std::string value = str().substr(old_pos, tellp() - old_pos);
-		for (LogFilterList::const_iterator it = Filters().begin();
-				it != Filters().end(); ++it) {
-			(*it)->OnLogValue(attr, value);
-		}
 		return *this;
 	}
 
@@ -222,17 +197,10 @@ public:
 
 		*this << std::setiosflags(std::ios::fixed | std::ios::showpoint)
 			<< std::setprecision(precision);
-		std::streamoff old_pos = tellp();
 		AppendLogValue(*this, v);
 
 		*this << std::setprecision(saved_precision);
 		flags(saved_flags);
-
-		std::string value = str().substr(old_pos, tellp() - old_pos);
-		for (LogFilterList::const_iterator it = Filters().begin();
-				it != Filters().end(); ++it) {
-			(*it)->OnLogValue(attr, value);
-		}
 		return *this;
 	}
 
@@ -245,17 +213,10 @@ public:
 
 		*this << std::setiosflags(std::ios::fixed | std::ios::showpoint)
 			<< std::setprecision(precision);
-		std::streamoff old_pos = tellp();
 		AppendLogValue(*this, v);
 
 		*this << std::setprecision(saved_precision);
 		flags(saved_flags);
-
-		std::string value = str().substr(old_pos, tellp() - old_pos);
-		for (LogFilterList::const_iterator it = Filters().begin();
-				it != Filters().end(); ++it) {
-			(*it)->OnLogValue(attr, value);
-		}
 		return *this;
 	}
 
@@ -267,16 +228,9 @@ public:
 		std::ios_base::fmtflags saved_flags = flags();
 
 		*this << std::hex;
-		std::streamoff old_pos = tellp();
 		AppendLogValue(*this, v);
 
 		flags(saved_flags);
-
-		std::string value = str().substr(old_pos, tellp() - old_pos);
-		for (LogFilterList::const_iterator it = Filters().begin();
-				it != Filters().end(); ++it) {
-			(*it)->OnLogValue(attr, value);
-		}
 		return *this;
 	}
 
@@ -285,18 +239,9 @@ public:
 		*this << SEP() << attr << EQ() << "0x";
 
 		std::ios_base::fmtflags saved_flags = flags();
-
 		*this << std::hex;
-		std::streamoff old_pos = tellp();
 		AppendLogValue(*this, v);
-
 		flags(saved_flags);
-
-		std::string value = str().substr(old_pos, tellp() - old_pos);
-		for (LogFilterList::const_iterator it = Filters().begin();
-				it != Filters().end(); ++it) {
-			(*it)->OnLogValue(attr, value);
-		}
 		return *this;
 	}
 
@@ -321,29 +266,6 @@ public:
 		return *this;
 	}
 };
-
-class LogMessage;
-struct LogFilterManager {
-	virtual void OnMessageCreated(int log_prior, const char* title, LogMessage* log_msg) = 0;
-};
-
-class LogManager {
-public:
-	typedef std::vector<LogFilterManager*> FilterMgrMap;
-	static LogManager& Instance() { static LogManager sInstance; return sInstance; }
-	void AddFilterManager(LogFilterManager* filter_mgr) { _filter_mgrs.push_back(filter_mgr); }
-	virtual void OnMessageCreated(int log_prior, const char* title, LogMessage* log_msg) {
-		for (FilterMgrMap::iterator it = _filter_mgrs.begin();
-				it != _filter_mgrs.end(); ++it) {
-			(*it)->OnMessageCreated(log_prior, title, log_msg);
-		}
-	}
-
-private:
-	~LogManager() {}
-	FilterMgrMap _filter_mgrs;
-};
-
 class LogMessage : public LogStream
 {
 	int _prior;
@@ -352,11 +274,6 @@ public:
 	LogMessage(int log_prior, const char* title): _prior(log_prior) {
 		*this << title;
 
-		LogManager::Instance().OnMessageCreated(log_prior, title, this);
-	}
-	const LogFilterList& Filters() const { return _filters; }
-	void AddFilter(LogFilter* filter) {
-		_filters.push_back(filter);
 	}
 	virtual ~LogMessage()
 	{
@@ -374,14 +291,7 @@ public:
 		{
 			Log::logvital(_prior, "%s",content.c_str());
 		}
-
-		for (LogFilterList::const_iterator it = Filters().begin();
-				it != Filters().end(); ++it) {
-			(*it)->OnLogFinished();
-		}
 	}
-protected:
-	std::vector<LogFilter*> _filters;
 };
 
 } // end namespace GNET
