@@ -3,7 +3,8 @@
 #include <stdio.h>
 #include <iostream>
 #include <sstream>
-
+#include <filesystem>
+#include <filesystem>
 
 enum class LOG_LEVEL {
 	DEBUG = 0,
@@ -26,8 +27,6 @@ public:
 		os << "|" << t << "=" << p;
 		return FormatString(os, rest...);
 	}
-	static void WriteLog()
-	static std::stringstream& log()
 	template <typename... Args>
 	static void log(LOG_LEVEL log_level, const char* file, int line, const char* desc, const Args&... rest) {
 		static char* LogLevelDescList[] = {
@@ -42,12 +41,64 @@ public:
 };
 
 class LogWriter {
-private:
+public:
+	LogWriter(const char* file, int line) : file_(file), line_(line), ss_(GetStream()) {
+		
+	}
+	~LogWriter() {
+
+	}
 	static std::stringstream& GetStream() {
-		static std::stringstream ss;
+		static thread_local std::stringstream ss;
+		ss.clear();
 		return ss;
 	}
+
+	template <typename P>
+	std::ostream& FormatString(std::ostream& os, const char* t, const P& p) {
+		return os << "|" << t << "=" << p << "\n";
+	}
+	//µÝ¹éÖÕÖ¹Ìõ¼þ
+	template <typename T, typename P>
+	std::ostream& FormatString(std::ostream& os, const T& t, const P& p) {
+		return os << "|" << t << "=" << p << "\n";
+	}
+
+	//µÝ¹éÌå
+	template <typename T, typename P, typename... Args>
+	std::ostream& FormatString(std::ostream& os, const T& t, const P& p, const Args&... rest) {
+		os << "|" << t << "=" << p;
+		return FormatString(os, rest...);
+	}
+	template <typename... Args>
+	void log(LOG_LEVEL log_level, const char* desc, const Args&... rest) {
+		static char* LogLevelDescList[] = {
+			"debug",
+			"trace",
+		};
+		std::stringstream ss;
+		ss << LogLevelDescList[int(log_level)] << "|" << file_ << ":" << line_ << "|" << desc;
+		FormatString(ss, rest...);
+		std::cout << ss.str();
+	}
+	void init() {
+		std::filesystem::path p;
+		std::filesystem::directory_entry dir(p);
+		std::error_code err;
+		std::filesystem::create_directory(p, err);
+		std::filesystem::permissions(p, (std::filesystem::perms)0755, err);
+	}
+private:
+	std::stringstream& ss_;
+	const char* file_;
+	int line_;
 };
-#define BLOG  blog::log()
+class LogManager {
+	void Init() {
+		std::string root;
+
+	}
+};
+#define BLOG  LogWriter(__FILE__, __LINE__).log
 
 #endif //BCORE_BLOG_LOG_H_

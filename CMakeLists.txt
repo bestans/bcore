@@ -5,6 +5,9 @@ cmake_minimum_required (VERSION 3.8)
 
 project ("bcore-project")
 
+#指定c++17
+set(CMAKE_CXX_STANDARD 17)
+
 IF (CMAKE_BUILD_TYPE MATCHES "Debug")
     SET(LIB_DIR "lib/x64-debug")
     add_definitions(-D_DEBUG)

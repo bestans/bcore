@@ -38,7 +38,9 @@ class Devide : public Base {
 int main(int argc, char* argv[]) {
 	std::cout << "tcp server start\n";
 	std::stringstream ss;
-	BLOG(LOG_LEVEL::DEBUG, __FILE__, __LINE__, "desc1", "desc2", 11);
+	BLOG(LOG_LEVEL::DEBUG, "desc1", "desc2", 11);
+	std::cout << std::is_same<std::decay<char[6]>::type, char*>::value << '\n';
+
 	std::cout << ss.str();
 	auto pool = std::make_shared<bcore_basio::ThreadPool>(10);
 	auto option = std::make_shared<ServerOption>();
