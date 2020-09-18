@@ -2,6 +2,7 @@
 #include "basio/tcp_session.h"
 #include "bnet/tcp_option.h"
 #include "blog/log.h"
+#include "blog/blog.h"
 #include "asio.hpp"
 #include <memory>
 #include <iostream>
@@ -41,6 +42,11 @@ int main(int argc, char* argv[]) {
 	BLOG(LOG_LEVEL::DEBUG, "desc1", "desc2", 11);
 	std::cout << std::is_same<std::decay<char[6]>::type, char*>::value << '\n';
 
+	std::vector<int> d;
+	d.push_back(1);
+	d.push_back(2);
+	int v = 0;
+	NTRACE("aaaa", d, v);
 	std::cout << ss.str();
 	auto pool = std::make_shared<bcore_basio::ThreadPool>(10);
 	auto option = std::make_shared<ServerOption>();
