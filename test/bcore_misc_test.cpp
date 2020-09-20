@@ -86,7 +86,7 @@ namespace test {
 			count++;
 			});
 		Timer::AddFuncAfterDuration(offset, [cur_time, offset]() {
-			EXPECT_LE(BTime::GetMilliTime() - cur_time - offset, 10, ) << "check timer duration";
+			EXPECT_LE(BTime::GetMilliTime() - cur_time - offset, 10) << "check timer duration";
 			});
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));

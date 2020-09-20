@@ -99,6 +99,6 @@ class LogManager {
 
 	}
 };
-#define BLOG  LogWriter(__FILE__, __LINE__).log
+//#define BLOG  LogWriter(__FILE__, __LINE__).log
 
 #endif //BCORE_BLOG_LOG_H_

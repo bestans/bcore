@@ -12,7 +12,7 @@
 
 // 如果需要更换分隔符，则重定义这两个宏.  或者在项目中临时替换
 #ifndef NLOG_SEP
-#define NLOG_SEP ":"
+#define NLOG_SEP "|"
 #endif // NLOG_SEP
 #ifndef NLOG_EQ
 #define NLOG_EQ "="
@@ -90,6 +90,7 @@ namespace bcore
 		LOG_WARNING,
 		LOG_ERR,
 		LOG_CRIT,
+		LOG_COUNT,
 	};
 	template<typename T>
 	struct HasMember_tolog
@@ -271,6 +272,7 @@ namespace bcore
 			return *this;
 		}
 	};
+	
 	class LogMessage : public LogStream
 	{
 		int _prior;
@@ -278,6 +280,9 @@ namespace bcore
 
 		LogMessage(int log_prior, const char* title) : _prior(log_prior) {
 			*this << title;
+		}
+		LogMessage(int log_prior, const char* title, const char* file, int line) : _prior(log_prior) {
+			*this << LastFile(file) << ":" << line << NLOG_SEP << title;
 		}
 		virtual ~LogMessage()
 		{
@@ -299,35 +304,49 @@ namespace bcore
 				std::cout << content << std::endl;
 			}
 		}
+	private:
+		const char* LastFile(const char* file) {
+			char* ptr = (char*)file + strlen(file);
+			while (ptr != file && *(ptr - 1) != '\\') {
+				--ptr;
+			}
+			return ptr;
+		}
 	};
 
 } // end namespace bcore
 
-#define NLOG_MESSAGE_CRIT(x) bcore::LogMessage(LOG_CRIT, (x))
-#define NLOG_MESSAGE_ERR(x) bcore::LogMessage(LOG_ERR, (x))
-#define NLOG_MESSAGE_WARNING(x) bcore::LogMessage(LOG_WARNING, (x))
-#define NLOG_MESSAGE_TRACE(x) bcore::LogMessage(LOG_DEBUG, (x))
+#define BLOG(t, x) bcore::LogMessage(t, (x), __FILE__, __LINE__)
 
-#define NLOG(t, x) NLOG_MESSAGE_##t(x)
-#define DLOG(t, x) NLOG(t, (x)).P("file", __FILE__).P("line", __LINE__)
+#define EXPAND(...) __VA_ARGS__
 
-//下边的宏可以用于不想写变量名的地方，用法示例： 
-//      NTRACE("rolelogin", roleid, userid, level);
-// 或者 NTRACE("rolelogout", roleid);
-
-#define NTRACE(title,...) NTRACE_(title, ##__VA_ARGS__,8,7,6,5,4,3,2,1,0)
-#define NTRACE_(title,x1,x2,x3,x4,x5,x6,x7,x8,count,...) NTRACE##count(title,x1,x2,x3,x4,x5,x6,x7,x8)
-//#define NTRACE_(title,x1,x2,x3,x4,x5,x6,x7,x8,count,...) std::cout << x1 << x2;
-
-#define NTRACE0(title,x1,x2,x3,x4,x5,x6,x7,x8) NLOG_MESSAGE_TRACE(title).P("file",__FILE__).P("line", __LINE__)
-#define NTRACE1(title,x1,x2,x3,x4,x5,x6,x7,x8) NTRACE0(title,x1,x2,x3,x4,x5,x6,x7,x8).P(#x1,x1)
-#define NTRACE2(title,x1,x2,x3,x4,x5,x6,x7,x8) NTRACE1(title,x1,x2,x3,x4,x5,x6,x7,x8).P(#x2,x2)
-#define NTRACE3(title,x1,x2,x3,x4,x5,x6,x7,x8) NTRACE2(title,x1,x2,x3,x4,x5,x6,x7,x8).P(#x3,x3)
-#define NTRACE4(title,x1,x2,x3,x4,x5,x6,x7,x8) NTRACE3(title,x1,x2,x3,x4,x5,x6,x7,x8).P(#x4,x4)
-#define NTRACE5(title,x1,x2,x3,x4,x5,x6,x7,x8) NTRACE4(title,x1,x2,x3,x4,x5,x6,x7,x8).P(#x5,x5)
-#define NTRACE6(title,x1,x2,x3,x4,x5,x6,x7,x8) NTRACE5(title,x1,x2,x3,x4,x5,x6,x7,x8).P(#x6,x6)
-#define NTRACE7(title,x1,x2,x3,x4,x5,x6,x7,x8) NTRACE6(title,x1,x2,x3,x4,x5,x6,x7,x8).P(#x7,x7)
-#define NTRACE8(title,x1,x2,x3,x4,x5,x6,x7,x8) NTRACE7(title,x1,x2,x3,x4,x5,x6,x7,x8).P(#x8,x8)
+//debug
+#define BLOG_DEBUG(title,...) BLOG_DEBUG_(title, ##__VA_ARGS__,8,7,6,5,4,3,2,1,0)
+#define BLOG_DEBUG_(...) EXPAND(BLOG_DEBUG_LATER(__VA_ARGS__))
+#define BLOG_DEBUG_LATER(title,x1,x2,x3,x4,x5,x6,x7,x8,count,...) BLOG_DEBUG_##count(title,x1,x2,x3,x4,x5,x6,x7,x8)
+#define BLOG_DEBUG_0(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG(LOG_DEBUG, title)
+#define BLOG_DEBUG_2(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG_DEBUG_0(title,x1,x2,x3,x4,x5,x6,x7,x8).P(x1,x2)
+#define BLOG_DEBUG_4(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG_DEBUG_2(title,x1,x2,x3,x4,x5,x6,x7,x8).P(x3,x4)
+#define BLOG_DEBUG_6(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG_DEBUG_4(title,x1,x2,x3,x4,x5,x6,x7,x8).P(x5,x6)
+#define BLOG_DEBUG_8(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG_DEBUG_6(title,x1,x2,x3,x4,x5,x6,x7,x8).P(x7,x8)
+//trace
+#define BLOG_TRACE(title,...) BLOG_TRACE_(title, ##__VA_ARGS__,8,7,6,5,4,3,2,1,0)
+#define BLOG_TRACE_(...) EXPAND(BLOG_TRACE_LATER(__VA_ARGS__))
+#define BLOG_TRACE_LATER(title,x1,x2,x3,x4,x5,x6,x7,x8,count,...) BLOG_TRACE_##count(title,x1,x2,x3,x4,x5,x6,x7,x8)
+#define BLOG_TRACE_0(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG(LOG_TRACE, title)
+#define BLOG_TRACE_2(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG_TRACE_0(title,x1,x2,x3,x4,x5,x6,x7,x8).P(x1,x2)
+#define BLOG_TRACE_4(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG_TRACE_2(title,x1,x2,x3,x4,x5,x6,x7,x8).P(x3,x4)
+#define BLOG_TRACE_6(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG_TRACE_4(title,x1,x2,x3,x4,x5,x6,x7,x8).P(x5,x6)
+#define BLOG_TRACE_8(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG_TRACE_6(title,x1,x2,x3,x4,x5,x6,x7,x8).P(x7,x8)
+//format
+#define BLOG_FORMAT(title,...) BLOG_FORMAT_(title, ##__VA_ARGS__,8,7,6,5,4,3,2,1,0)
+#define BLOG_FORMAT_(...) EXPAND(BLOG_FORMAT_LATER(__VA_ARGS__))
+#define BLOG_FORMAT_LATER(title,x1,x2,x3,x4,x5,x6,x7,x8,count,...) BLOG_FORMAT_##count(title,x1,x2,x3,x4,x5,x6,x7,x8)
+#define BLOG_FORMAT_0(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG(LOG_FORMAT, title)
+#define BLOG_FORMAT_2(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG_FORMAT_0(title,x1,x2,x3,x4,x5,x6,x7,x8).P(x1,x2)
+#define BLOG_FORMAT_4(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG_FORMAT_2(title,x1,x2,x3,x4,x5,x6,x7,x8).P(x3,x4)
+#define BLOG_FORMAT_6(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG_FORMAT_4(title,x1,x2,x3,x4,x5,x6,x7,x8).P(x5,x6)
+#define BLOG_FORMAT_8(title,x1,x2,x3,x4,x5,x6,x7,x8) BLOG_FORMAT_6(title,x1,x2,x3,x4,x5,x6,x7,x8).P(x7,x8)
 
 #endif // _NLOG_H
 

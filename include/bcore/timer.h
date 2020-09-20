@@ -21,6 +21,9 @@ namespace bcore {
 			TimerNode(int64_t end_t, TimerFunc& f) : end_time(end_t), stop(false), func(std::move(f)) {
 				timer_node_times++;
 			}
+			TimerNode(int64_t end_t, TimerFunc&& f) : end_time(end_t), stop(false), func(std::move(f)) {
+				timer_node_times++;
+			}
 			void StopTimer() { stop = true; }
 			~TimerNode() {
 				timer_node_times--;
