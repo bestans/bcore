@@ -46,6 +46,7 @@ int main(int argc, char* argv[]) {
 	d.push_back(1);
 	d.push_back(2);
 	int v = 0;
+	LogFileManager::Instance().Init("logs");
 	BLOG_TRACE("aaaa", "d", d, "v", v).P("111", v);
 
 	std::cout << ss.str();

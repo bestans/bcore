@@ -9,6 +9,7 @@
 #include <queue>
 #include <sstream>
 #include <iomanip>
+#include "log_file.h"
 
 // 如果需要更换分隔符，则重定义这两个宏.  或者在项目中临时替换
 #ifndef NLOG_SEP
@@ -83,15 +84,6 @@
 
 namespace bcore
 {
-	enum LOG_PRIOR {
-		LOG_DEBUG,
-		LOG_TRACE,
-		LOG_FORMAT,
-		LOG_WARNING,
-		LOG_ERR,
-		LOG_CRIT,
-		LOG_COUNT,
-	};
 	template<typename T>
 	struct HasMember_tolog
 	{
@@ -302,6 +294,7 @@ namespace bcore
 				//Log::logvital(_prior, "%s", content.c_str());
 
 				std::cout << content << std::endl;
+				LogFileManager::WriteLog((LOG_PRIOR)_prior, content);
 			}
 		}
 	private:

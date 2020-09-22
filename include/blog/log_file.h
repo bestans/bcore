@@ -14,6 +14,15 @@
 #endif
 
 namespace bcore {
+	enum LOG_PRIOR {
+		LOG_DEBUG,
+		LOG_TRACE,
+		LOG_FORMAT,
+		LOG_WARNING,
+		LOG_ERR,
+		LOG_CRIT,
+		LOG_COUNT,
+	};
 	class LogFileContext {
 	public:
 		LogFileContext(const std::string& root_path, const char* log_name) {
@@ -26,7 +35,7 @@ namespace bcore {
 			}
 
 			std::tm time_struct;
-			std::localtime_s(&time_struct, &now);
+			localtime_s(&time_struct, &now);
 			std::stringstream ss;
 			ss << root_path_ << "/" << std::put_time(&time_struct, "%Y-%m-%d/");
 			
@@ -71,27 +80,48 @@ namespace bcore {
 		}
 		void WriteLog(const std::string& str) {
 			Lock();
-			if (!init()) {
+			auto now = time(0);
+			if (!init(now)) {
 				Unlock();
 				return;
 			}
 			std::tm time_struct;
-			std::localtime_s(&time_struct, &now);
-			file_ << std::put_time(&time_struct, "%Y-%m-%d %H:%M:%S|") << str << std::endl;
+			localtime_s(&time_struct, &now);
+			file_ << std::put_time(&time_struct, "%Y-%m-%d %H:%M:%S|") << GetPid() << "|" << str << std::endl;
 			file_.flush();
 			Unlock();
+		}
+		static int GetPid() {
+#ifndef __linux__
+			static int g_pid = (int)GetCurrentProcessId();
+#else
+			static int g_pid = (int)getpid();
+#endif
+			return g_pid;
 		}
 		
 	private:
 		std::string root_path_;
 		std::string log_name_;
 		std::mutex mutex_;
-		std::ofstream file_ = nullptr;
+		std::ofstream file_;
 		time_t next_check_time_ = 0;
 	};
 	class LogFileManager : public Singleton<LogFileManager> {
-	protected:
+	public:
 		LogFileManager() {
+		}
+		bool Init(std::string log_root = "./", bool local = false) {
+			root_path_ = log_root;
+			std::filesystem::path p(root_path_);
+			std::error_code err;
+			std::filesystem::directory_entry dir(p);
+			if (!dir.exists() && !std::filesystem::create_directory(p, err)) {
+				std::cout << "create dir root path," + root_path_ << " failed.err=" << err << std::endl;
+				return false;
+			}
+			std::filesystem::permissions(p, (std::filesystem::perms)0755, err);
+
 			static const char* g_log_name_list[LOG_COUNT] = {
 				"debug.log",
 				"trace.log",
@@ -99,37 +129,32 @@ namespace bcore {
 				"warning.log",
 				"error.log",
 				"crit.log",
-			}
+			};
 			for (int i = 0; i < LOG_COUNT; i++) {
-				log_list_[i] = std::make_shared<LogFileContext>(root_path_, g_log_name_list[i])
+				log_list_[i] = std::make_shared<LogFileContext>(root_path_, g_log_name_list[i]);
 			}
-		}
-		bool Init() {
-			std::filesystem::path p(root_path_);
-			std::error_code err;
-			if (!std::filesystem::create_directory(p, err)) {
-				std::cout << "create dir root path," + root_path_ << " failed.err=" << err;
-				return false;
-			}
-			std::filesystem::permissions(p, (std::filesystem::perms)0755, err);
+			init_ = true;
 			return true;
 		}
-		static int GetPid() {
-#ifndef __linux__
-			
-			return (int)GetCurrentProcessId();
-
-#else
-			return (int)getpid();
-#endif
-		}
-		static void WriteLog(int prior, const std::string& str) {
-
+		static void WriteLog(LOG_PRIOR prior, const std::string& str) {
+			if (Instance().init_) {
+				Instance().log_list_[prior]->WriteLog(str);
+			}
+			if (Instance().local_) {
+				auto now = time(0);
+				std::stringstream ss;
+				std::tm time_struct;
+				localtime_s(&time_struct, &now);
+				ss << std::put_time(&time_struct, "%Y-%m-%d %H:%M:%S|") << str;
+				std::cout << ss.str() << std::endl;
+			}
 		}
 
 	private:
 		std::string root_path_ = "./";
 		std::array<std::shared_ptr<LogFileContext>, LOG_COUNT> log_list_;
+		bool init_ = false;
+		bool local_ = true;
 	};
 
 }
