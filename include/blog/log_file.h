@@ -16,61 +16,103 @@
 namespace bcore {
 	class LogFileContext {
 	public:
-		LogFileContext() {
-			
+		LogFileContext(const std::string& root_path, const char* log_name) {
+			root_path_ = root_path;
+			log_name_ = log_name;
 		}
-		bool Init() {
+		bool init(time_t now) {
+			if (next_check_time_ > now) {
+				return true;
+			}
 
+			std::tm time_struct;
+			std::localtime_s(&time_struct, &now);
+			std::stringstream ss;
+			ss << root_path_ << "/" << std::put_time(&time_struct, "%Y-%m-%d/");
+			
+			std::filesystem::path p(ss.str());
+			std::filesystem::directory_entry dir(p);
+			std::error_code err;
+			if (!dir.exists(err)) {
+				std::filesystem::create_directory(p, err);
+				std::filesystem::permissions(p, (std::filesystem::perms)0755, err);
+				if (!dir.exists(err)) {
+					std::stringstream temp;
+					temp << "ERROR:create_directory " << ss.str() << " failed,err=" << err << std::endl;
+					std::cout << temp.str();
+					return false;
+				}
+			}
+			ss << log_name_;
+			if (file_) {
+				file_.close();
+			}
+			file_.open(ss.str(), std::ios_base::app);
+
+			//下次检查时间
+			struct tm z;
+			memset(&z, 0, sizeof(z));
+			z.tm_year = time_struct.tm_year;
+			z.tm_mon = time_struct.tm_mon;
+			z.tm_mday = time_struct.tm_mday;
+			next_check_time_ = mktime(&z);
+			return true;
 		}
 		~LogFileContext() {
 			if (file_) {
 				file_.close();
 			}
 		}
-		void WriteLog(const std::string& str) {
+		inline void Lock() {
 			mutex_.lock();
-			auto now = time(0);
-			if (now >= next_check_time_) {
-				file_.close();
+		}
+		inline void Unlock() {
+			mutex_.unlock();
+		}
+		void WriteLog(const std::string& str) {
+			Lock();
+			if (!init()) {
+				Unlock();
+				return;
 			}
 			std::tm time_struct;
 			std::localtime_s(&time_struct, &now);
 			file_ << std::put_time(&time_struct, "%Y-%m-%d %H:%M:%S|") << str << std::endl;
 			file_.flush();
-			mutex_.unlock();
+			Unlock();
 		}
+		
 	private:
-		time_t next_check_time_:
-		std::mutex mutex_;
-		std::ofstream file_;
 		std::string root_path_;
+		std::string log_name_;
+		std::mutex mutex_;
+		std::ofstream file_ = nullptr;
+		time_t next_check_time_ = 0;
 	};
 	class LogFileManager : public Singleton<LogFileManager> {
 	protected:
 		LogFileManager() {
-			
+			static const char* g_log_name_list[LOG_COUNT] = {
+				"debug.log",
+				"trace.log",
+				"format.log",
+				"warning.log",
+				"error.log",
+				"crit.log",
+			}
+			for (int i = 0; i < LOG_COUNT; i++) {
+				log_list_[i] = std::make_shared<LogFileContext>(root_path_, g_log_name_list[i])
+			}
 		}
-		bool Init(std::string& err_msg) {
-
+		bool Init() {
 			std::filesystem::path p(root_path_);
-			if (!std::filesystem::exists(p)) {
-				err_msg += "invalid root path," + root_path_;
+			std::error_code err;
+			if (!std::filesystem::create_directory(p, err)) {
+				std::cout << "create dir root path," + root_path_ << " failed.err=" << err;
 				return false;
 			}
-
-			std::filesystem::directory_entry dir(p);
-
-			std::error_code err;
-			std::filesystem::create_directory(p, err);
 			std::filesystem::permissions(p, (std::filesystem::perms)0755, err);
-		}
-		inline std::string GetDatePath() {
-			std::stringstream ss;
-			ss << root_path_ << "/" << xx;
-			time_t now = time(0);
-			std::tm time_struct;
-			std::localtime_s(&time_struct, &now);
-			ss << std::put_time(&time_struct, "%Y-%m-%d") << "/";
+			return true;
 		}
 		static int GetPid() {
 #ifndef __linux__
@@ -86,8 +128,8 @@ namespace bcore {
 		}
 
 	private:
-		std::string root_path_;
-
+		std::string root_path_ = "./";
+		std::array<std::shared_ptr<LogFileContext>, LOG_COUNT> log_list_;
 	};
 
 }
