@@ -61,6 +61,8 @@ public:
 	//µİ¹éÖÕÖ¹Ìõ¼ş
 	template <typename T, typename P>
 	std::ostream& FormatString(std::ostream& os, const T& t, const P& p) {
+		int i;
+		os >> i;
 		return os << "|" << t << "=" << p << "\n";
 	}
 
