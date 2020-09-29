@@ -1,6 +1,7 @@
 #ifndef BCORE_BCORE_CUSTOM_STREAM_H_
 #define BCORE_BCORE_CUSTOM_STREAM_H_
 #include <streambuf>
+#include <fstream>
 namespace bcore {
 	//eback,gptr,egptr => 读缓冲区的头，当前读位置，尾
 	//pbase,pptr,epptr => 写缓冲区的头，当前写位置，尾
@@ -17,7 +18,7 @@ namespace bcore {
 			setbuf(buffer, SIZE);
 		}
 		void log() {
-			cout << hex << gptr() << endl;
+			std::cout << hex << gptr() << endl;
 		}
 	protected:
 		int_type overflow(int_type c) {
@@ -26,7 +27,7 @@ namespace bcore {
 			}
 			return c;
 		}
-		streambuf* setbuf(char* s, streamsize n) {
+		CustomStream* setbuf(char* s, streamsize n) {
 			setp(s, s + n);
 			setg(s, s, s);
 			return this;

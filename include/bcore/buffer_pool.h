@@ -192,41 +192,4 @@ namespace bcore {
 		uint32_t max_buffer_size_;
 		uint32_t min_buffer_size_;
 	};
-
-	class DataSerialize {
-	private:
-		static const uint64_t EncodeVarintCompare = 0x7F;
-	public:
-		inline void Output(bool x, std::streambuf& buf) {
-			buf.sputc((char)(x ? 1 : 0));
-		}
-		inline void Output(char x, std::streambuf& buf) {
-			buf.sputc(x);
-		}
-		inline void Output(unsigned char x, std::streambuf& buf) {
-			buf.sputc((char)x);
-		}
-		inline void Output(uint64_t x, std::streambuf& buf) {
-			while (true) {
-				if (x > EncodeVarintCompare) {
-					if (-1 == buf.sputc((char)(x & 0x7F | 0x80))) {
-						return;
-					}
-					x >>= 7;
-				}
-				else {
-					if (-1 == buf.sputc((char)(x & 0x7F | 0x80))) {
-						return;
-					}
-				}
-			}
-		}
-		inline void Output(const char* str, std::streambuf& buf) {
-			Output(strlen())
-			buf.sputn(str, strlen(str));
-		}
-		inline void Output(const std::string& str, std::streambuf& buf) {
-			buf.sputn(str.c_str(), str.size());
-		}
-	};
 }
