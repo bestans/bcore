@@ -4,6 +4,9 @@
 
 namespace bcore {
 	class BufferStreamBase;
+	enum class BUFF_STREAM_STATE {
+		DECODE_COMMON_NUMBER_FAILED = 0;
+	};
 	class ODataSerialize {
 	private:
 		static const uint64_t EncodeVarintCompare = 0x7F;
@@ -54,17 +57,107 @@ namespace bcore {
 	class IDataSerialize {
 	public:
 		void Input(bool& val, std::streambuf& buf, BufferStreamBase& bs) {
+			if (!bs.IsStateValid) {
+				return;
+			}
 			char c = 0;
 			if (buf.sgetc(&c) == std::EOF) {
 				val = c == 0 ? true : false;
+			}
+			return 
+		}
+		void Input(int8_t& val, std::streambuf& buf, BufferStreamBase& bs) {
+			if (!bs.IsStateValid) {
+				return;
+			}
+			if (buf.sgetc(&val) == std::EOF) {
+				bs.SetState(BUFF_STREAM_STATE::DECODE_COMMON_NUMBER_FAILED)
+			}
+		}
+		void Input(uint8_t& val, std::streambuf& buf, BufferStreamBase& bs) {
+			char temp = 0;
+			if (buf.sgetc(&val) == std::EOF) {
+				bs.SetState(BUFF_STREAM_STATE::DECODE_COMMON_NUMBER_FAILED)
+			}
+			val = (uint8_t)temp;
+		}
+		void Input(int16_t& val, std::streambuf& buf, BufferStreamBase& bs) {
+			uint64_t temp = 0;
+			Input(temp, buf, bs);
+			val = (int16_t)(temp & 0xFFFF);
+		}
+		void Input(uint16_t& val, std::streambuf& buf, BufferStreamBase& bs) {
+			uint64_t temp = 0;
+			Input(temp, buf, bs);
+			val = (uint16_t)(temp & 0xFFFF);
+		}
+		void Input(int32_t& val, std::streambuf& buf, BufferStreamBase& bs) {
+			uint64_t temp = 0;
+			Input(temp, buf, bs);
+			val = (int32_t)(temp & 0xFFFFFFFF);
+		}
+		void Input(uint32_t& val, std::streambuf& buf, BufferStreamBase& bs) {
+			if (!bs.IsStateValid) {
+				return;
+			}
+			uint64_t temp = 0;
+			Input(temp, buf, bs);
+			val = (uint32_t)(temp & 0xFFFFFFFF);
+		}
+		void Input(int64_t& val, std::streambuf& buf, BufferStreamBase& bs) {
+			uint64_t temp = 0;
+			Input(temp, buf, bs);
+			val = (int64_t)temp;
+		}
+		void Input(uint64_t& val, std::streambuf& buf, BufferStreamBase& bs) {
+			if (!bs.IsStateValid) {
+				return;
+			}
+			char c = 0;
+			int shift = 0;
+			while (buf.sgetc(&c) != std::EOF && shift <= 63) {
+				auto b = uint8_t(c);
+				x |= ((uint64_t)b & 0x7F) << shift;
+				shift += 7;
+				if (b < (uint8_t)0x80) {
+					return;
+				}
+			}
+			bs.SetState(BUFF_STREAM_STATE::DECODE_COMMON_NUMBER_FAILED);
+		}
+		void Input(float& val, std::streambuf& buf, BufferStreamBase& bs) {
+			uint64_t temp = 0;
+			Input(temp, buf, bs);
+			union { float f; uint32_t i; };
+			i = (uint32_t)(temp & 0xFFFFFFFF);
+			val = f;
+		}
+		void Input(double& val, std::streambuf& buf, BufferStreamBase& bs) {
+			union { double f; uint64_t i; };
+			Input(i, buf, bs);
+			val = f;
+		}
+		void Input(std::string& val, std::streambuf& buf, BufferStreamBase& bs) {
+			if (!bs.IsStateValid) {
+				return;
+			}
+			uint32_t len = 0;
+			Input(len, buf, bs);
+			if !bs.IsStateValid() {
+				return;
+			}
+			auto src_len = val.size();
+			val.resize(src_len + len);
+			if (buf.sgetn(val.c_str() + src_len, len) == std::EOF) {
+				bs.SetState(BUFF_STREAM_STATE::DECODE_COMMON_NUMBER_FAILED);
 			}
 		}
 	};
 	
 	class BufferStreamBase {
 	public:
-		void SetState(int state) {
-			mask_ |= state;
+		void SetState(BUFF_STREAM_STATE state) {
+			mask_ |= ((int)1<<(int)state);
 		}
 		int IsStateValid() {
 			return mask_ != 0;
@@ -72,75 +165,53 @@ namespace bcore {
 	private:
 		int mask_ = 0;
 	};
+#define IBUFFER_STREAM_DEFINE(valueType) \
+	IBufferStream& operator>> (valueType& val) { \
+		Input(val, *buf_, *this); \
+		return *this; \
+	}
+
 	//template <class OutputSerialize>
-	class IBufferStream : virtual public BufferStreamBase,  public ODataSerialize {
+	class IBufferStream : virtual public BufferStreamBase,  public IDataSerialize {
 	public:
-		IBufferStream& operator>> (bool& val) {
-			Output(val);
-			return *this;
-		}
-		IBufferStream& operator>> (short& val) {
-			Output(val);
-			return *this;
-		}
-		IBufferStream& operator>> (unsigned short& val) {
-			Output(val);
-			return *this;
-		}
-		IBufferStream& operator>> (int& val) {
-
-		}
-		IBufferStream& operator>> (unsigned int& val) {
-
-		}
-		IBufferStream& operator>> (long& val) {
-
-		}
-		IBufferStream& operator>> (unsigned long& val) {
-
-		}
-		IBufferStream& operator>> (long long& val) {
-
-		}
-		IBufferStream& operator>> (unsigned long long& val) {
-
-		}
-		IBufferStream& operator>> (float& val) {
-
-		}
-		IBufferStream& operator>> (double& val) {
-
-		}
-		IBufferStream& operator>> (long double& val) {
-
-		}
-		IBufferStream& operator>> (void*& val) {
-
-		}
+		IBufferStream(std::streambuf* buf) : buf_(buf) {}
+		IBUFFER_STREAM_DEFINE(bool);
+		IBUFFER_STREAM_DEFINE(int16_t);
+		IBUFFER_STREAM_DEFINE(uint16_t);
+		IBUFFER_STREAM_DEFINE(int32_t);
+		IBUFFER_STREAM_DEFINE(uint32_t);
+		IBUFFER_STREAM_DEFINE(int64_t);
+		IBUFFER_STREAM_DEFINE(uint64_t);
+		IBUFFER_STREAM_DEFINE(long);
+		IBUFFER_STREAM_DEFINE(double);
+		IBUFFER_STREAM_DEFINE(std::string);
 	private:
-		std::streambuf buf_;
+		std::streambuf* buf_;
 	};
-	class OBufferStream : public ODataSerialize {
+#define OBUFFER_STREAM_DEFINE(valueType) \
+	OBufferStream& operator>> (valueType val) { \
+		Output(val, *buf_, *this); \
+		return *this; \
+	}
+	class OBufferStream : virtual public BufferStreamBase, public ODataSerialize {
 	public:
-		OBufferStream& operator<< (bool val);
-		OBufferStream& operator<< (short val);
-		OBufferStream& operator<< (unsigned short val);
-		OBufferStream& operator<< (int val);
-		OBufferStream& operator<< (unsigned int val);
-		OBufferStream& operator<< (long val);
-		OBufferStream& operator<< (unsigned long val);
-		OBufferStream& operator<< (long long val);
-		OBufferStream& operator<< (unsigned long long val);
-		OBufferStream& operator<< (float val);
-		OBufferStream& operator<< (double val);
-		OBufferStream& operator<< (long double val);
-		OBufferStream& operator<< (void* val);
-
-		OBufferStream& operator<< (streambuf* sb);
-		OBufferStream& operator<< (ostream& (*pf)(ostream&));
-		OBufferStream& operator<< (ios& (*pf)(ios&));
-		OBufferStream& operator<< (ios_base& (*pf)(ios_base&));
+		OBufferStream(std::streambuf* buf) : buf_(buf) {}
+		OBUFFER_STREAM_DEFINE(bool);
+		OBUFFER_STREAM_DEFINE(int16_t);
+		OBUFFER_STREAM_DEFINE(uint16_t);
+		OBUFFER_STREAM_DEFINE(int32_t);
+		OBUFFER_STREAM_DEFINE(uint32_t);
+		OBUFFER_STREAM_DEFINE(int64_t);
+		OBUFFER_STREAM_DEFINE(uint64_t);
+		OBUFFER_STREAM_DEFINE(long);
+		OBUFFER_STREAM_DEFINE(double);
+		OBUFFER_STREAM_DEFINE(const char*);
+		OBufferStream& operator<< (std::string& str) {
+			Output(str, buf_, this);
+			return *this;
+		}
 	private:
+		std::streambuf* buf_;
 	};
 }
 
