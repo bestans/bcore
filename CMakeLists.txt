@@ -28,17 +28,16 @@ SET(BCORE_ASIO_LIB ${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR}/bcore_asio${LIB_SUFFIX
 SET(ROOT_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 message(G_TEST_LIB\ ${G_TEST_LIB})
 
+SET(GOOGLE_TEST_INCLUDE "F:/github_code/googletest-release-1.10.0/googletest/include")
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
-    F:/github_code/googletest-release-1.10.0/googletest/include
+    ${GOOGLE_TEST_INCLUDE}
     F:/github_code/asio-1.16.1/include
 )
 SET(LIBRARY_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/${LIB_DIR})
 add_definitions(-DBTEST)
 
 # 包含子项目。
-add_subdirectory ("test_project")
-add_subdirectory ("network")
 add_subdirectory ("src/bcore")
 add_subdirectory ("test")
 add_subdirectory ("src/basio")

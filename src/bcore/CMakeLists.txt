@@ -8,7 +8,7 @@ add_library(bcore STATIC ${SRC_LIST})
 #message("${SRC_LIST}")
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
-    F:/github_code/googletest-release-1.10.0/googletest/include
+    ${GOOGLE_TEST_INCLUDE}
 )
 message(${CMAKE_CURRENT_SOURCE_DIR})
 # target_link_libraries(bcore  ${G_TEST_LIB})
