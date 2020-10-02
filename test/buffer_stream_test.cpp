@@ -8,8 +8,9 @@ TEST(buffer_stream, test) {
 	std::stringbuf buf;
 	IBufferStream ibs(&buf);
 	OBufferStream obs(&buf);
-	obs << 100;
-	int value = 0;
+	float v = 10;
+	obs << v;
+	float value = 0;
 	ibs >> value;
 	std::cout << value << std::endl;
 }
