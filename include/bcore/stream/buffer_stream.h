@@ -3,9 +3,19 @@
 #include <streambuf>
 
 namespace bcore {
-	class BufferStreamBase;
 	enum class BUFF_STREAM_STATE {
-		DECODE_COMMON_NUMBER_FAILED = 0;
+		DECODE_COMMON_NUMBER_FAILED = 0,
+	};
+	class BufferStreamBase {
+	public:
+		void SetState(BUFF_STREAM_STATE state) {
+			mask_ |= ((int)1 << (int)state);
+		}
+		bool IsStateValid() {
+			return mask_ != 0;
+		}
+	private:
+		int mask_ = 0;
 	};
 	class ODataSerialize {
 	private:
@@ -57,17 +67,17 @@ namespace bcore {
 	class IDataSerialize {
 	public:
 		void Input(bool& val, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid) {
+			if (!bs.IsStateValid()) {
 				return;
 			}
-			char c = 0;
+			int v = buf.sgetc(&c);
 			if (buf.sgetc(&c) == std::EOF) {
 				val = c == 0 ? true : false;
 			}
 			return 
 		}
 		void Input(int8_t& val, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid) {
+			if (!bs.IsStateValid()) {
 				return;
 			}
 			if (buf.sgetc(&val) == std::EOF) {
@@ -75,6 +85,9 @@ namespace bcore {
 			}
 		}
 		void Input(uint8_t& val, std::streambuf& buf, BufferStreamBase& bs) {
+			if (!bs.IsStateValid()) {
+				return;
+			}
 			char temp = 0;
 			if (buf.sgetc(&val) == std::EOF) {
 				bs.SetState(BUFF_STREAM_STATE::DECODE_COMMON_NUMBER_FAILED)
@@ -110,7 +123,7 @@ namespace bcore {
 			val = (int64_t)temp;
 		}
 		void Input(uint64_t& val, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid) {
+			if (!bs.IsStateValid()) {
 				return;
 			}
 			char c = 0;
@@ -138,7 +151,7 @@ namespace bcore {
 			val = f;
 		}
 		void Input(std::string& val, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid) {
+			if (!bs.IsStateValid()) {
 				return;
 			}
 			uint32_t len = 0;
@@ -154,17 +167,6 @@ namespace bcore {
 		}
 	};
 	
-	class BufferStreamBase {
-	public:
-		void SetState(BUFF_STREAM_STATE state) {
-			mask_ |= ((int)1<<(int)state);
-		}
-		int IsStateValid() {
-			return mask_ != 0;
-		}
-	private:
-		int mask_ = 0;
-	};
 #define IBUFFER_STREAM_DEFINE(valueType) \
 	IBufferStream& operator>> (valueType& val) { \
 		Input(val, *buf_, *this); \
@@ -189,7 +191,7 @@ namespace bcore {
 		std::streambuf* buf_;
 	};
 #define OBUFFER_STREAM_DEFINE(valueType) \
-	OBufferStream& operator>> (valueType val) { \
+	OBufferStream& operator<< (valueType val) { \
 		Output(val, *buf_, *this); \
 		return *this; \
 	}
