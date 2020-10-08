@@ -64,7 +64,7 @@ namespace bcore {
 					x >>= 7;
 				}
 				else {
-					if (-1 == buf.sputc((char)(x & 0x7F | 0x80))) {
+					if (-1 == buf.sputc((char)(x & 0x7F))) {
 						bs.SetState(BUFF_STREAM_STATE::DECODE_COMMON_NUMBER_FAILED);
 					}
 					return;
@@ -159,16 +159,16 @@ namespace bcore {
 			if (!bs.IsStateValid()) {
 				return;
 			}
-			int shift = 7;
-			char c = (char)buf.sgetc();
+			int shift = 0;
+			char c = (char)buf.sbumpc();
 			while (c != BufEOF && shift <= 63) {
 				auto b = uint8_t(c);
 				x |= ((uint64_t)b & 0x7F) << shift;
 				shift += 7;
-				if (b >= (uint8_t)0x80) {
+				if (b < (uint8_t)0x80) {
 					return;
 				}
-				c = (char)buf.sgetc();
+				c = (char)buf.sbumpc();
 			}
 			bs.SetState(BUFF_STREAM_STATE::DECODE_COMMON_NUMBER_FAILED);
 		}

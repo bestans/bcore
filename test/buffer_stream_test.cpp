@@ -9,8 +9,10 @@ TEST(buffer_stream, test) {
 	IBufferStream ibs(&buf);
 	OBufferStream obs(&buf);
 	float v = 10;
-	obs << v;
-	float value = 0;
-	ibs >> value;
-	std::cout << value << std::endl;
+	obs << (float)10000;
+	obs << (int)1234;
+	float fvalue = 0;
+	int ivalue = 0;
+	ibs >> fvalue >> ivalue;
+	std::cout << ivalue << "," << fvalue << std::endl;
 }
