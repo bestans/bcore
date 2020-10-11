@@ -5,7 +5,14 @@
 
 namespace bcore {
 	enum class BUFF_STREAM_STATE {
-		DECODE_COMMON_NUMBER_FAILED = 0,
+		DECODE_CHAR_FAILED = 0,
+		DECODE_UNSIGNED_CHAR_FAILED,
+		DECODE_COMMON_NUMBER_FAILED,
+		DECODE_STRING_FAILED,
+		DECODE_BUFFER_FAILED,
+		ENCODE_COMMON_NUMBER_FAILED,
+		ENCODE_CONST_CHAR_LEN_NOT_ENOUGH,
+		ENCODE_STRING_LEN_NOT_ENOUGH,
 	};
 	class BufferStreamBase {
 	public:
@@ -14,6 +21,9 @@ namespace bcore {
 		}
 		bool IsStateValid() {
 			return mask_ == 0;
+		}
+		inline bool IsEOF(std::streambuf::int_type c) {
+			return std::streambuf::traits_type::eq_int_type(c, std::streambuf::traits_type::eof());
 		}
 	private:
 		int mask_ = 0;
@@ -58,14 +68,15 @@ namespace bcore {
 				return;
 			while (true) {
 				if (x > EncodeVarintCompare) {
-					if (-1 == buf.sputc((char)(x & 0x7F | 0x80))) {
+					if (bs.IsEOF(buf.sputc((char)(x & 0x7F | 0x80)))) {
+						bs.SetState(BUFF_STREAM_STATE::ENCODE_COMMON_NUMBER_FAILED);
 						return;
 					}
 					x >>= 7;
 				}
 				else {
-					if (-1 == buf.sputc((char)(x & 0x7F))) {
-						bs.SetState(BUFF_STREAM_STATE::DECODE_COMMON_NUMBER_FAILED);
+					if (bs.IsEOF(buf.sputc((char)(x & 0x7F)))) {
+						bs.SetState(BUFF_STREAM_STATE::ENCODE_COMMON_NUMBER_FAILED);
 					}
 					return;
 				}
@@ -82,13 +93,24 @@ namespace bcore {
 			Output((uint64_t)i, buf, bs);
 		}
 		inline void Output(const char* str, std::streambuf& buf, BufferStreamBase& bs) {
-			if (bs.IsStateValid()) {
-				buf.sputn(str, strlen(str));
+			if (!bs.IsStateValid()) {
+				return;
+			}
+			auto len = strlen(str);
+			Output((uint32_t)len, buf, bs);
+			if (!bs.IsStateValid()) {
+				return;
+			}
+			if (buf.sputn(str, len) != len) {
+				bs.SetState(BUFF_STREAM_STATE::ENCODE_CONST_CHAR_LEN_NOT_ENOUGH);
 			}
 		}
 		inline void Output(const std::string& str, std::streambuf& buf, BufferStreamBase& bs) {
-			if (bs.IsStateValid()) {
-				buf.sputn(str.c_str(), str.size());
+			if (!bs.IsStateValid()) {
+				return;
+			}
+			if (buf.sputn(str.c_str(), str.size()) != str.size()) {
+				bs.SetState(BUFF_STREAM_STATE::ENCODE_STRING_LEN_NOT_ENOUGH);
 			}
 		}
 	};
@@ -99,32 +121,33 @@ namespace bcore {
 			if (!bs.IsStateValid()) {
 				return;
 			}
-			auto v = (char)buf.sgetc();
+			auto v = (char)buf.sbumpc();
 			if (v != BufEOF) {
-				val = v == 0 ? true : false;
+				val = v == 0 ? false : true;
 			}
 		}
-		void Input(int8_t& val, std::streambuf& buf, BufferStreamBase& bs) {
+		void Input(char& val, std::streambuf& buf, BufferStreamBase& bs) {
 			if (!bs.IsStateValid()) {
 				return;
 			}
-			auto v = buf.sgetc();
-			if (v != BufEOF) {
-				val = v;
-			} else {
-				bs.SetState(BUFF_STREAM_STATE::DECODE_COMMON_NUMBER_FAILED);
+			auto v = buf.sbumpc();
+			if (bs.IsEOF(v)) {
+				bs.SetState(BUFF_STREAM_STATE::DECODE_CHAR_FAILED);
+			} 
+			else {
+				val = (char)v;
 			}
 		}
-		void Input(uint8_t& val, std::streambuf& buf, BufferStreamBase& bs) {
+		void Input(unsigned char& val, std::streambuf& buf, BufferStreamBase& bs) {
 			if (!bs.IsStateValid()) {
 				return;
 			}
-			auto v = (char)buf.sgetc();
-			if (v == BufEOF) {
-				bs.SetState(BUFF_STREAM_STATE::DECODE_COMMON_NUMBER_FAILED);
+			auto v = buf.sbumpc();
+			if (bs.IsEOF(v)) {
+				bs.SetState(BUFF_STREAM_STATE::DECODE_UNSIGNED_CHAR_FAILED);
 			}
 			else {
-				val = (uint8_t)v;
+				val = (unsigned char)v;
 			}
 		}
 		void Input(int16_t& val, std::streambuf& buf, BufferStreamBase& bs) {
@@ -160,15 +183,16 @@ namespace bcore {
 				return;
 			}
 			int shift = 0;
-			char c = (char)buf.sbumpc();
-			while (c != BufEOF && shift <= 63) {
+			int i = buf.sbumpc();
+			while (!bs.IsEOF(i) && shift <= 63) {
+				char c = i;
 				auto b = uint8_t(c);
 				x |= ((uint64_t)b & 0x7F) << shift;
 				shift += 7;
 				if (b < (uint8_t)0x80) {
 					return;
 				}
-				c = (char)buf.sbumpc();
+				i = buf.sbumpc();
 			}
 			bs.SetState(BUFF_STREAM_STATE::DECODE_COMMON_NUMBER_FAILED);
 		}
@@ -195,8 +219,25 @@ namespace bcore {
 			}
 			auto src_len = val.size();
 			val.resize(src_len + len);
-			if (buf.sgetn(const_cast<char*>(val.c_str()) + src_len, len) == BufEOF) {
-				bs.SetState(BUFF_STREAM_STATE::DECODE_COMMON_NUMBER_FAILED);
+			if (buf.sgetn(const_cast<char*>(val.c_str()) + src_len, len) != len) {
+				bs.SetState(BUFF_STREAM_STATE::DECODE_STRING_FAILED);
+			}
+		}
+		void Input(char* str, uint32_t cap, std::streambuf& buf, BufferStreamBase& bs) {
+			if (!bs.IsStateValid()) {
+				return;
+			}
+			uint32_t len = 0;
+			Input(len, buf, bs);
+			if (!bs.IsStateValid()) {
+				return;
+			}
+			if (len > cap) {
+				bs.SetState(BUFF_STREAM_STATE::DECODE_BUFFER_FAILED);
+				return;
+			}
+			if (buf.sgetn(str, len) != len) {
+				bs.SetState(BUFF_STREAM_STATE::DECODE_BUFFER_FAILED);
 			}
 		}
 	};
@@ -212,6 +253,8 @@ namespace bcore {
 	public:
 		IBufferStream(std::streambuf* buf) : buf_(buf) {}
 		IBUFFER_STREAM_DEFINE(bool);
+		IBUFFER_STREAM_DEFINE(char);
+		IBUFFER_STREAM_DEFINE(unsigned char);
 		IBUFFER_STREAM_DEFINE(int16_t);
 		IBUFFER_STREAM_DEFINE(uint16_t);
 		IBUFFER_STREAM_DEFINE(int32_t);
@@ -233,6 +276,8 @@ namespace bcore {
 	public:
 		OBufferStream(std::streambuf* buf) : buf_(buf) {}
 		OBUFFER_STREAM_DEFINE(bool);
+		OBUFFER_STREAM_DEFINE(char);
+		OBUFFER_STREAM_DEFINE(unsigned char);
 		OBUFFER_STREAM_DEFINE(int16_t);
 		OBUFFER_STREAM_DEFINE(uint16_t);
 		OBUFFER_STREAM_DEFINE(int32_t);
