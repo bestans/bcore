@@ -10,12 +10,17 @@ namespace bcore {
 		DECODE_COMMON_NUMBER_FAILED,
 		DECODE_STRING_FAILED,
 		DECODE_BUFFER_FAILED,
+		ENCODE_BOOL_FAILED,
+		ENCODE_CHAR_FAILED,
+		ENCODE_UNSIGNED_CHAR_FAILED,
 		ENCODE_COMMON_NUMBER_FAILED,
 		ENCODE_CONST_CHAR_LEN_NOT_ENOUGH,
 		ENCODE_STRING_LEN_NOT_ENOUGH,
 	};
 	class BufferStreamBase {
 	public:
+		BufferStreamBase(std::_Uninitialized) {}
+		BufferStreamBase(std::streambuf* buf) { Init(buf); }
 		void SetState(BUFF_STREAM_STATE state) {
 			mask_ |= ((int)1 << (int)state);
 		}
@@ -25,8 +30,14 @@ namespace bcore {
 		inline bool IsEOF(std::streambuf::int_type c) {
 			return std::streambuf::traits_type::eq_int_type(c, std::streambuf::traits_type::eof());
 		}
-	private:
+	protected:
+		void Init(std::streambuf* buf) {
+			buf_ = buf;
+			mask_ = 0;
+		}
+	protected:
 		int mask_ = 0;
+		std::streambuf* buf_;
 	};
 	const char BufEOF = (char)std::streambuf::traits_type::eof();
 	class ODataSerialize {
@@ -34,18 +45,18 @@ namespace bcore {
 		static const uint64_t EncodeVarintCompare = 0x7F;
 	public:
 		inline void Output(bool x, std::streambuf& buf, BufferStreamBase& bs) {
-			if (bs.IsStateValid()) {
-				buf.sputc((char)(x ? 1 : 0));
+			if (bs.IsEOF(buf.sputc(x))) {
+				bs.SetState(BUFF_STREAM_STATE::ENCODE_BOOL_FAILED);
 			}
 		}
 		inline void Output(char x, std::streambuf& buf, BufferStreamBase& bs) {
-			if (bs.IsStateValid()) {
-				buf.sputc(x);
+			if (bs.IsEOF(buf.sputc(x))) {
+				bs.SetState(BUFF_STREAM_STATE::ENCODE_CHAR_FAILED);
 			}
 		}
 		inline void Output(unsigned char x, std::streambuf& buf, BufferStreamBase& bs) {
-			if (bs.IsStateValid()) {
-				buf.sputc((char)x);
+			if (bs.IsEOF(buf.sputc(x))) {
+				bs.SetState(BUFF_STREAM_STATE::ENCODE_UNSIGNED_CHAR_FAILED);
 			}
 		}
 		inline void Output(int16_t x, std::streambuf& buf, BufferStreamBase& bs) {
@@ -64,11 +75,9 @@ namespace bcore {
 			Output((uint64_t)x, buf, bs);
 		}
 		inline void Output(uint64_t x, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid())
-				return;
 			while (true) {
 				if (x > EncodeVarintCompare) {
-					if (bs.IsEOF(buf.sputc((char)(x & 0x7F | 0x80)))) {
+					if (bs.IsEOF(buf.sputc((char)((x & 0x7F) | 0x80)))) {
 						bs.SetState(BUFF_STREAM_STATE::ENCODE_COMMON_NUMBER_FAILED);
 						return;
 					}
@@ -93,9 +102,6 @@ namespace bcore {
 			Output((uint64_t)i, buf, bs);
 		}
 		inline void Output(const char* str, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid()) {
-				return;
-			}
 			auto len = strlen(str);
 			Output((uint32_t)len, buf, bs);
 			if (!bs.IsStateValid()) {
@@ -106,9 +112,6 @@ namespace bcore {
 			}
 		}
 		inline void Output(const std::string& str, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid()) {
-				return;
-			}
 			if (buf.sputn(str.c_str(), str.size()) != str.size()) {
 				bs.SetState(BUFF_STREAM_STATE::ENCODE_STRING_LEN_NOT_ENOUGH);
 			}
@@ -118,30 +121,21 @@ namespace bcore {
 	class IDataSerialize {
 	public:
 		void Input(bool& val, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid()) {
-				return;
-			}
 			auto v = (char)buf.sbumpc();
 			if (v != BufEOF) {
 				val = v == 0 ? false : true;
 			}
 		}
 		void Input(char& val, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid()) {
-				return;
-			}
 			auto v = buf.sbumpc();
 			if (bs.IsEOF(v)) {
 				bs.SetState(BUFF_STREAM_STATE::DECODE_CHAR_FAILED);
-			} 
+			}
 			else {
 				val = (char)v;
 			}
 		}
 		void Input(unsigned char& val, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid()) {
-				return;
-			}
 			auto v = buf.sbumpc();
 			if (bs.IsEOF(v)) {
 				bs.SetState(BUFF_STREAM_STATE::DECODE_UNSIGNED_CHAR_FAILED);
@@ -166,9 +160,6 @@ namespace bcore {
 			val = (int32_t)(temp & 0xFFFFFFFF);
 		}
 		void Input(uint32_t& val, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid()) {
-				return;
-			}
 			uint64_t temp = 0;
 			Input(temp, buf, bs);
 			val = (uint32_t)(temp & 0xFFFFFFFF);
@@ -179,9 +170,6 @@ namespace bcore {
 			val = (int64_t)temp;
 		}
 		void Input(uint64_t& x, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid()) {
-				return;
-			}
 			int shift = 0;
 			int i = buf.sbumpc();
 			while (!bs.IsEOF(i) && shift <= 63) {
@@ -209,9 +197,6 @@ namespace bcore {
 			val = f;
 		}
 		void Input(std::string& val, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid()) {
-				return;
-			}
 			uint32_t len = 0;
 			Input(len, buf, bs);
 			if (!bs.IsStateValid()) {
@@ -224,9 +209,6 @@ namespace bcore {
 			}
 		}
 		void Input(char* str, uint32_t cap, std::streambuf& buf, BufferStreamBase& bs) {
-			if (!bs.IsStateValid()) {
-				return;
-			}
 			uint32_t len = 0;
 			Input(len, buf, bs);
 			if (!bs.IsStateValid()) {
@@ -243,15 +225,18 @@ namespace bcore {
 	};
 	
 #define IBUFFER_STREAM_DEFINE(valueType) \
-	IBufferStream& operator>> (valueType& val) { \
-		Input(val, *buf_, *this); \
+	inline BasicIBufferStream& operator>> (valueType& val) { \
+		if (IsStateValid()) { \
+			Input(val, *buf_, *this); \
+		} \
 		return *this; \
 	}
 
 	//template <class OutputSerialize>
-	class IBufferStream : virtual public BufferStreamBase,  public IDataSerialize {
+	template <class DECODE>
+	class BasicIBufferStream : virtual public BufferStreamBase,  public DECODE {
 	public:
-		IBufferStream(std::streambuf* buf) : buf_(buf) {}
+		BasicIBufferStream(std::streambuf* buf) : BufferStreamBase(buf) {}
 		IBUFFER_STREAM_DEFINE(bool);
 		IBUFFER_STREAM_DEFINE(char);
 		IBUFFER_STREAM_DEFINE(unsigned char);
@@ -264,17 +249,19 @@ namespace bcore {
 		IBUFFER_STREAM_DEFINE(float);
 		IBUFFER_STREAM_DEFINE(double);
 		IBUFFER_STREAM_DEFINE(std::string);
-	private:
-		std::streambuf* buf_;
 	};
 #define OBUFFER_STREAM_DEFINE(valueType) \
-	OBufferStream& operator<< (valueType val) { \
-		Output(val, *buf_, *this); \
+	inline BasicOBufferStream& operator<< (valueType val) { \
+		if (IsStateValid()) { \
+			Output(val, *buf_, *this); \
+		} \
 		return *this; \
 	}
-	class OBufferStream : virtual public BufferStreamBase, public ODataSerialize {
+	template <class ENCODE>
+	class BasicOBufferStream : virtual public BufferStreamBase, public ENCODE {
 	public:
-		OBufferStream(std::streambuf* buf) : buf_(buf) {}
+		BasicOBufferStream(std::_Uninitialized) : BufferStreamBase(std::_Noinit) {}
+		BasicOBufferStream(std::streambuf* buf) : BufferStreamBase(buf) {}
 		OBUFFER_STREAM_DEFINE(bool);
 		OBUFFER_STREAM_DEFINE(char);
 		OBUFFER_STREAM_DEFINE(unsigned char);
@@ -287,13 +274,22 @@ namespace bcore {
 		OBUFFER_STREAM_DEFINE(float);
 		OBUFFER_STREAM_DEFINE(double);
 		OBUFFER_STREAM_DEFINE(const char*);
-		OBufferStream& operator<< (std::string& str) {
-			Output(str, *buf_, *this);
+		inline BasicOBufferStream& operator<< (const std::string& str) {
+			if (IsStateValid()) {
+				Output(str, *buf_, *this);
+			}
 			return *this;
 		}
-	private:
-		std::streambuf* buf_;
 	};
+	template <class DECODE, class ENCODE>
+	class BasicIOBufferStream : public BasicIBufferStream<DECODE>, public BasicOBufferStream<ENCODE> {
+	public:
+		explicit BasicIOBufferStream(std::streambuf* buf) : BasicIBufferStream<DECODE>(buf), BasicOBufferStream<ENCODE>(std::_Noinit)  { }
+	};
+
+	using IBufferStream = BasicIBufferStream<IDataSerialize>;
+	using OBufferStream = BasicOBufferStream<ODataSerialize>;
+	using IOBufferStream = BasicIOBufferStream<IDataSerialize, ODataSerialize>;
 }
 
 #endif // BCORE_BCORE_BUFFER_STREAM_H_
