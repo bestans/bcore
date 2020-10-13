@@ -2,12 +2,11 @@
 #include <streambuf>
 #include <gtest/gtest.h>
 #include "bcore/stream/buffer_stream.h"
+#include <gtest/gtest.h>
 
 using namespace bcore;
 TEST(buffer_stream, test) {
-	std::stringbuf buf;
-	IBufferStream ibs(&buf);
-	OBufferStream obs(&buf);
+	FixedStringBuf buf(1000);
 	IOBufferStream iobs(&buf);
 	bool v1 = true;
 	char v2 = 100;
@@ -19,9 +18,41 @@ TEST(buffer_stream, test) {
 	int64_t  v8 = INT64_MAX;
 	uint64_t v9 = UINT64_MAX;
 	const char* v10 = "v10";
+	std::string v11 = "string10";
 	iobs << v1 << v2 << v3 << v4 << v5 << v6 << v7 << v8 << v9 << v10;
-	v1 = 0; v2 = 0; v3 = 0; v4 = 0; v5 = 0; v6 = 0; v7 = 0; v8 = 0; v9 = 0;
-	std::string d10 = "111";
-	iobs >> v1 >> v2 >> v3 >> v4 >> v5 >> v6 >> v7 >> v8 >> v9 >> d10;
-	std::cout << v1 << "," << (int)v2 << "," << (int)v3 << "," << v4 << "," << v5 << "," << v6 << "," << v7 << "," << v8 << "," << v9 << "," << d10 << std::endl;
+	auto d1 = v1;
+	auto d2 = v2;
+	auto d3 = v3;
+	auto d4 = v4;
+	auto d5 = v5;
+	auto d6 = v6;
+	auto d7 = v7;
+	auto d8 = v8;
+	auto d9 = v9;
+	auto d10 = v11;
+	d1 = 0; d2 = 0; d3 = 0; d4 = 0; d5 = 0; d6 = 0; d7 = 0; d8 = 0; d9 = 0;
+	d10.clear();
+	iobs >> d1 >> d2 >> d3 >> d4 >> d5 >> d6 >> d7 >> d8 >> d9 >> d10;
+
+	EXPECT_EQ(v1, d1);
+	EXPECT_EQ(v2, d2);
+	EXPECT_EQ(v3, d3);
+	EXPECT_EQ(v4, d4);
+	EXPECT_EQ(v5, d5);
+	EXPECT_EQ(v6, d6);
+	EXPECT_EQ(v7, d7);
+	EXPECT_EQ(v8, d8);
+	EXPECT_EQ(v9, d9);
+	EXPECT_EQ(v10, d10);
+	iobs << v11;
+	d10.clear();
+	iobs >> d10;
+	EXPECT_EQ(v11, d10);
+	std::cout << d1 << "," << (int)d2 << "," << (int)d3 << "," << d4 << "," << d5 << "," << d6 << "," << d7 << "," << d8 << "," << d9 << "," << d10 << std::endl;
+}
+
+
+TEST(buffer_stream, testinvalid) {
+	std::stringbuf buf;
+	IOBufferStream iobs(&buf);
 }

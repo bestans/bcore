@@ -17,6 +17,16 @@ namespace bcore {
 		ENCODE_CONST_CHAR_LEN_NOT_ENOUGH,
 		ENCODE_STRING_LEN_NOT_ENOUGH,
 	};
+	class FixedStringBuf : public std::stringbuf {
+	public:
+		FixedStringBuf(size_t cap) : std::stringbuf(std::ios_base::in | std::ios_base::out) {
+			str(std::string(cap, 0));
+		}
+	protected:
+		int_type overflow(int_type _Meta = std::char_traits<char>::eof()) override {
+			return std::char_traits<char>::eof();
+		}
+	};
 	class BufferStreamBase {
 	public:
 		BufferStreamBase(std::_Uninitialized) {}
@@ -114,6 +124,10 @@ namespace bcore {
 			}
 		}
 		inline void Output(const std::string& str, std::streambuf& buf, BufferStreamBase& bs) {
+			Output((uint32_t)str.size(), buf, bs);
+			if (!bs.IsStateValid()) {
+				return;
+			}
 			if (buf.sputn(str.c_str(), str.size()) != str.size()) {
 				bs.SetState(BUFF_STREAM_STATE::ENCODE_STRING_LEN_NOT_ENOUGH);
 			}
