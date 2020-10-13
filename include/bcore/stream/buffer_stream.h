@@ -24,6 +24,7 @@ namespace bcore {
 		void SetState(BUFF_STREAM_STATE state) {
 			mask_ |= ((int)1 << (int)state);
 		}
+		~BufferStreamBase() {}
 		bool IsStateValid() {
 			return mask_ == 0;
 		}
@@ -31,13 +32,14 @@ namespace bcore {
 			return std::streambuf::traits_type::eq_int_type(c, std::streambuf::traits_type::eof());
 		}
 	protected:
+		BufferStreamBase() {}
 		void Init(std::streambuf* buf) {
 			buf_ = buf;
 			mask_ = 0;
 		}
 	protected:
 		int mask_ = 0;
-		std::streambuf* buf_;
+		std::streambuf* buf_ = nullptr;
 	};
 	const char BufEOF = (char)std::streambuf::traits_type::eof();
 	class ODataSerialize {
@@ -236,7 +238,9 @@ namespace bcore {
 	template <class DECODE>
 	class BasicIBufferStream : virtual public BufferStreamBase,  public DECODE {
 	public:
-		BasicIBufferStream(std::streambuf* buf) : BufferStreamBase(buf) {}
+		BasicIBufferStream(std::streambuf* buf) {
+			BufferStreamBase::Init(buf);
+		}
 		IBUFFER_STREAM_DEFINE(bool);
 		IBUFFER_STREAM_DEFINE(char);
 		IBUFFER_STREAM_DEFINE(unsigned char);
@@ -284,7 +288,7 @@ namespace bcore {
 	template <class DECODE, class ENCODE>
 	class BasicIOBufferStream : public BasicIBufferStream<DECODE>, public BasicOBufferStream<ENCODE> {
 	public:
-		explicit BasicIOBufferStream(std::streambuf* buf) : BasicIBufferStream<DECODE>(buf), BasicOBufferStream<ENCODE>(std::_Noinit)  { }
+		BasicIOBufferStream(std::streambuf* buf) : BasicIBufferStream<DECODE>(buf), BasicOBufferStream<ENCODE>(std::_Noinit)  { }
 	};
 
 	using IBufferStream = BasicIBufferStream<IDataSerialize>;
