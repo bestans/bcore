@@ -51,8 +51,23 @@ TEST(buffer_stream, test) {
 	std::cout << d1 << "," << (int)d2 << "," << (int)d3 << "," << d4 << "," << d5 << "," << d6 << "," << d7 << "," << d8 << "," << d9 << "," << d10 << std::endl;
 }
 
-
 TEST(buffer_stream, testinvalid) {
-	std::stringbuf buf;
+	StringBuf buf;
 	IOBufferStream iobs(&buf);
+	iobs << (int)100;
+	buf.SeekBegin();
+	iobs << (int)110;
+	int v = 0;
+	iobs >> v;
+	std::cout << v << std::endl;
+
+	FixedStringBuf fbuf(5);
+	std::iostream ss(&fbuf);
+	std::cout << ss.good() << std::endl;
+	ss << "aaaa" << "aasdfa" << 11;
+	ss.clear();
+	std::cout << ss.good() << std::endl;
+	fbuf.SeekBegin();
+	ss << "aaaa" << "aasdfa" << 11;
+	std::cout << fbuf.str() << std::endl;
 }

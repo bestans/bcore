@@ -5,7 +5,8 @@
 
 namespace bcore {
 	enum class BUFF_STREAM_STATE {
-		DECODE_CHAR_FAILED = 0,
+		NORMAL = 0,
+		DECODE_CHAR_FAILED,
 		DECODE_UNSIGNED_CHAR_FAILED,
 		DECODE_COMMON_NUMBER_FAILED,
 		DECODE_STRING_FAILED,
@@ -17,22 +18,31 @@ namespace bcore {
 		ENCODE_CONST_CHAR_LEN_NOT_ENOUGH,
 		ENCODE_STRING_LEN_NOT_ENOUGH,
 	};
-	class FixedStringBuf : public std::stringbuf {
+	class StringBuf : public std::stringbuf {
 	public:
-		FixedStringBuf(size_t cap) : std::stringbuf(std::ios_base::in | std::ios_base::out) {
-			str(std::string(cap, 0));
+		inline void SeekBegin() {
+			seekpos(0);
 		}
+	};
+	class FixedStringBuf : public StringBuf {
+	public:
+		FixedStringBuf(size_t cap) {
+			str(std::string(cap, 0));
+			SeekBegin();
+		}
+
 	protected:
 		int_type overflow(int_type _Meta = std::char_traits<char>::eof()) override {
 			return std::char_traits<char>::eof();
 		}
 	};
+
 	class BufferStreamBase {
 	public:
 		BufferStreamBase(std::_Uninitialized) {}
 		BufferStreamBase(std::streambuf* buf) { Init(buf); }
 		void SetState(BUFF_STREAM_STATE state) {
-			mask_ |= ((int)1 << (int)state);
+			mask_ = (int)state;
 		}
 		~BufferStreamBase() {}
 		bool IsStateValid() {
