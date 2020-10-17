@@ -1,7 +1,7 @@
 #include <iostream>
 #include <streambuf>
 #include <gtest/gtest.h>
-#include "bcore/stream/buffer_stream.h"
+#include "bcore/stream/stream.h"
 #include <gtest/gtest.h>
 
 using namespace bcore;
@@ -51,6 +51,24 @@ TEST(buffer_stream, test) {
 	std::cout << d1 << "," << (int)d2 << "," << (int)d3 << "," << d4 << "," << d5 << "," << d6 << "," << d7 << "," << d8 << "," << d9 << "," << d10 << std::endl;
 }
 
+struct Data {
+	int v = 0;
+	float f = 0;
+	//void Decode(IBufferStream& in) {
+	//	in >> v >> f;
+	//}
+	//void Encode(OBufferStream& out) const {
+	//	out << v << f;
+	//}
+};
+OBufferStream& operator<<(OBufferStream& out, const Data& t) {
+	out << t.v << t.f;
+	return out;
+}
+IBufferStream& operator>>(IBufferStream& in, Data& t) {
+	in >> t.v >> t.f;
+	return in;
+}
 TEST(buffer_stream, testinvalid) {
 	StringBuf buf;
 	IOBufferStream iobs(&buf);
@@ -70,4 +88,20 @@ TEST(buffer_stream, testinvalid) {
 	fbuf.SeekBegin();
 	ss << "aaaa" << "aasdfa" << 11;
 	std::cout << fbuf.str() << std::endl;
+
+	Data data = { 100, 101.11 };
+	Data d2;
+	iobs << data;
+	iobs >> d2;
+	std::cout << d2.v << "," << d2.f << std::endl;
+
+	std::vector<Data> vec, vec2;
+	vec.push_back(data);
+	vec.push_back(data);
+
+	iobs << vec;
+	iobs >> vec2;
+	for (auto& it : vec2) {
+		std::cout << it.f << "," << it.v << std::endl;
+	}
 }
